@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use or write about PhoneBoxSound, please cite it like this."
+title: "PhoneBoxSound"
+abstract: "Self-hosted Windows app that turns the phones you already own into synchronised wireless speakers, a media remote and an intercom for your PC, over the local network."
+type: software
+authors:
+  - given-names: "Pritom"
+    family-names: "Barua"
+    alias: "pritombarua1"
+repository-code: "https://github.com/pritombarua1/PhoneBoxSound"
+url: "https://github.com/pritombarua1/PhoneBoxSound"
+license: GPL-3.0-or-later
+version: "3.1.1"
+date-released: "2026-10-14"
+keywords:
+  - audio
+  - synchronised playback
+  - wireless speakers
+  - remote control
+  - intercom
+  - Windows
+  - self-hosted

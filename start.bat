@@ -54,7 +54,7 @@ echo   YOUR RESPONSIBILITY (full text: DISCLAIMER.md in this folder):
 echo     - Use it only on computers, networks and devices you own or may use.
 echo     - You decide who connects and what they may do; misuse to harm, spy on
 echo       or get into other people's devices or accounts is forbidden.
-echo     - It is free software under the MIT License, provided AS IS, without any
+echo     - It is free software by Pritom Barua under the GNU GPL v3, provided AS IS, without any
 echo       warranty. The authors and contributors are not liable for any damage
 echo       or loss, or for how anyone uses it or a copy of it.
 echo     - Nothing is sent to the authors. No account, no cloud, no tracking.

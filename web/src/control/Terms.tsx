@@ -16,7 +16,7 @@ export default function Terms() {
           <li>Using it to harm, spy on or get into other people's devices or accounts is forbidden.</li>
           <li>Mind the volume, your hearing and your neighbours.</li>
         </ul>
-        <p className="muted">It is free open-source software under the MIT License, provided <b>as is</b>, without any warranty.
+        <p className="muted">It is free open-source software by Pritom Barua under the GNU GPL v3, provided <b>as is</b>, without any warranty.
           The authors and contributors are not liable for any damage or loss, or for how anyone uses it or a copy of it.
           Nothing is sent to the authors; there is no account and no cloud. The full text is in DISCLAIMER.md, next to the program.</p>
         <div className="row" style={{ justifyContent: "flex-end", gap: 10 }}>

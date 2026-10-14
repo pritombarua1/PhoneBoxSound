@@ -39,7 +39,7 @@ def main():
     ]
     subprocess.run(cmd, check=True, cwd=ROOT)
     folder = os.path.join(OUT, "PhoneBoxSound")
-    for name in ("LICENSE", "DISCLAIMER.md", "README.md"):       # the terms travel with the program
+    for name in ("LICENSE", "NOTICE.md", "DISCLAIMER.md", "README.md"):       # the terms travel with the program
         shutil.copy2(os.path.join(ROOT, name), os.path.join(OUT, "PhoneBoxSound", name))
     zip_path = shutil.make_archive(os.path.join(OUT, "PhoneBoxSound-win64"), "zip", OUT, "PhoneBoxSound")
     print(f"\nBuilt {os.path.join(folder, 'PhoneBoxSound.exe')}")

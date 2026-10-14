@@ -3,7 +3,7 @@
 **Your PC sound. Everywhere.** Turn the phones you already own into synchronised wireless speakers,
 a media remote and an intercom for your Windows PC. Phones just open a web page: nothing to install.
 
-No cloud · no account · no app install · local network only · MIT
+No cloud · no account · no app install · local network only · GPL-3.0 · by Pritom Barua
 
 ![Dashboard](docs/screens/dashboard.png)
 
@@ -14,10 +14,18 @@ No cloud · no account · no app install · local network only · MIT
   <img src="docs/screens/phone-more.png" width="24%" alt="Invite">
 </p>
 
-**[Illustrated guide (PDF)](docs/PhoneBoxSound-Guide.pdf)** · [animated version](docs/index.html) (open locally) ·
-**[guided tour video](docs/media/tour.mp4)** of every screen and setting, with voice and numbered steps ([as a page](docs/tour.html)) ·
-**[adding the browser extension by hand](docs/media/extension-install.mp4)** ([as a page](docs/extension-install.html)) ·
-demo videos in [`docs/media`](docs/media)
+## Videos
+
+| Guided tour: every screen and setting | Adding the browser extension by hand |
+|---|---|
+| [![Guided tour](docs/media/tour-preview.gif)](docs/media/tour.mp4) | [![Browser extension](docs/media/extension-preview.gif)](docs/media/extension-install.mp4) |
+| **[Watch the full tour (19 min)](docs/media/tour.mp4)**: spoken voice, numbered steps, and a marker for where each thing happens (on the PC, on the phone, in the browser) | **[Watch it (3 min)](docs/media/extension-install.mp4)**: Chrome, Edge, Brave, Opera, Vivaldi and Firefox, step by step |
+
+Click a picture or link, then press play on GitHub's player. Both videos are also attached to each
+[release](https://github.com/pritombarua1/PhoneBoxSound/releases/latest) to download, along with the
+**[illustrated guide (PDF)](docs/PhoneBoxSound-Guide.pdf)**. Short demo clips: [`docs/media`](docs/media).
+To step through at your own pace, download the repository and open `docs/tour.html` or `docs/index.html`
+in a browser.
 
 ## Quick start
 
@@ -496,4 +504,15 @@ also lists everything `start.bat` may download and whose terms apply.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Contributions welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
+Copyright (C) 2026 Pritom Barua. Free software under the **GNU General Public License v3 or later**
+([LICENSE](LICENSE)), with the additional terms in [NOTICE.md](NOTICE.md):
+
+- You may use, study, change and share it, also commercially.
+- If you share it or a changed version, keep the notice *"Based on PhoneBoxSound by Pritom Barua"* with
+  a link here, publish your full source under the same licence, and use a different name and logo.
+  It may not be turned into a closed-source product.
+
+**Citing it:** use the *Cite this repository* button on the right of the GitHub page
+([CITATION.cff](CITATION.cff)).
+
+Contributions welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).

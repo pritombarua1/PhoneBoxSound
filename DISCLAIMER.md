@@ -1,6 +1,7 @@
 # Disclaimer and terms of use
 
-PhoneBoxSound is free, open-source software, published under the [MIT License](LICENSE). By installing,
+PhoneBoxSound is free, open-source software by Pritom Barua, published under the
+[GNU General Public License v3](LICENSE) (see [NOTICE.md](NOTICE.md)). By installing,
 running, copying, changing or sharing it, you accept the following.
 
 ## No warranty, no liability

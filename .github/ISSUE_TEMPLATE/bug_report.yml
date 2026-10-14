@@ -1,0 +1,42 @@
+name: Something does not work
+description: Report a problem with PhoneBoxSound
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for taking the time. Please don't post passwords, tokens or the API token here. For security problems, see SECURITY.md instead."
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to make it happen again
+      placeholder: "1. Open Remote on the phone\n2. Tap ...\n3. ..."
+  - type: input
+    id: version
+    attributes:
+      label: PhoneBoxSound version
+      description: Shown in Settings → Diagnostics
+      placeholder: "3.1.1"
+    validations:
+      required: true
+  - type: input
+    id: pc
+    attributes:
+      label: PC
+      placeholder: "Windows 11 24H2, ready-made download / from source"
+  - type: input
+    id: phone
+    attributes:
+      label: Phone and browser
+      placeholder: "iPhone 15, Safari / Pixel 8, Chrome"
+  - type: textarea
+    id: diag
+    attributes:
+      label: Diagnostics
+      description: Settings → Diagnostics → Export, then attach the file here. It contains no passwords or tokens.

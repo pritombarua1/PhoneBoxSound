@@ -22,7 +22,7 @@
  {
   "file": "set-4",
   "title": "Pairing & network",
-  "text": "Pairing & network New code Room code 6117 Wi-Fi / LAN http://192.168.0.2:8095 Wi-Fi / LAN http://10.242.0.214:8095 Wi-Fi / LAN http://192.168.56.1:8095 Wi-Fi / LAN http://172.23.32.1:8095 Secure https://192.168.0.2:8496 Port phones and this page follow by themselves Move Advertise as phoneboxsound.local Secure server for intercom & app install (restart needed) Warning-free https address via local-ip.sh (restart needed) Approve new phones : the code alone isn't enough Lockdown : no phone controls the PC, no new phones, no remote API Strict security : PC controls only for verified phones Disconnect all phones The same port answers http and https. On the secure address every phone creates its own key that never leaves it and signs in with that key, so a copied token or a faked address can't pose as it. With strict security on, touchpad, clipboard, screen view, files, commands, power and managing speakers only work for those verified phones. A wrong code locks an address out for a minute after 5 tries. The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access."
+  "text": "Pairing & network New code Room code 2296 Wi-Fi / LAN http://192.168.0.2:8095 Wi-Fi / LAN http://10.242.0.214:8095 Wi-Fi / LAN http://192.168.56.1:8095 Wi-Fi / LAN http://172.23.32.1:8095 Secure https://192.168.0.2:8496 Port phones and this page follow by themselves Move Advertise as phoneboxsound.local Secure server for intercom & app install (restart needed) Warning-free https address via local-ip.sh (restart needed) Approve new phones : the code alone isn't enough Lockdown : no phone controls the PC, no new phones, no remote API Strict security : PC controls only for verified phones Disconnect all phones The same port answers http and https. On the secure address every phone creates its own key that never leaves it and signs in with that key, so a copied token or a faked address can't pose as it. With strict security on, touchpad, clipboard, screen view, files, commands, power and managing speakers only work for those verified phones. A wrong code locks an address out for a minute after 5 tries. The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access."
  },
  {
   "file": "set-5",
@@ -47,11 +47,11 @@
  {
   "file": "set-9",
   "title": "API & automation",
-  "text": "API & automation New token 1cs-••••••••••Al2 Status What's playing List phones Play / pause Skip forward 30 s Next track Repeat one song PC volume 40% Pause all phones Phones master volume 70% Apply scene: Movie Press Ctrl+S Type text Read clipboard Set clipboard Sleep the PC Cancel sleep / shutdown Copy command curl -H \"Authorization: Bearer <token>\" \\ http://192.168.0.2:8095/api/status Webhooks (one URL per line) Save Events: device_connected, device_disconnected, media_changed, intercom_started, intercom_stopped, scene_applied, streaming."
+  "text": "API & automation New token U0AT••••••••••QEl Status What's playing List phones Play / pause Skip forward 30 s Next track Repeat one song PC volume 40% Pause all phones Phones master volume 70% Apply scene: Movie Press Ctrl+S Type text Read clipboard Set clipboard Sleep the PC Cancel sleep / shutdown Copy command curl -H \"Authorization: Bearer <token>\" \\ http://192.168.0.2:8095/api/status Webhooks (one URL per line) Save Events: device_connected, device_disconnected, media_changed, intercom_started, intercom_stopped, scene_applied, streaming."
  },
  {
   "file": "set-10",
   "title": "Diagnostics",
-  "text": "Diagnostics Export Capture capturing Device Demo music Sample rate 48000 Hz Ports 8095 / 8496 (https) mDNS off Version 3.1.0 The export contains settings, device health and recent logs, with no tokens or passwords. Attach it to a GitHub issue."
+  "text": "Diagnostics Export Capture capturing Device Demo music Sample rate 48000 Hz Ports 8095 / 8496 (https) mDNS off Version 3.1.1 The export contains settings, device health and recent logs, with no tokens or passwords. Attach it to a GitHub issue. PhoneBoxSound by Pritom Barua · free software under the GNU GPL v3 · github.com/pritombarua1/PhoneBoxSound"
  }
 ]

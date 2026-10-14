@@ -276,6 +276,8 @@ export default function Settings() {
         <div className="card-h"><h3>Diagnostics</h3><div className="spacer" /><a className="btn sm" href="/api/diagnostics"><Icon name="download" />Export</a></div>
         <div className="kv" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>{diag.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div>
         <p className="note">The export contains settings, device health and recent logs, with no tokens or passwords. Attach it to a GitHub issue.</p>
+        <p className="muted" style={{ marginBottom: 0 }}>PhoneBoxSound by Pritom Barua · free software under the GNU GPL v3 ·{" "}
+          <a href="https://github.com/pritombarua1/PhoneBoxSound" target="_blank" rel="noreferrer">github.com/pritombarua1/PhoneBoxSound</a></p>
       </div>
     </div>
     </>

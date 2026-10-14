@@ -1,0 +1,14 @@
+name: Idea or wish
+description: Suggest something PhoneBoxSound should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why? When would you use it?
