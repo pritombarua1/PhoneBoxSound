@@ -26,14 +26,14 @@ jobs:
     env:
       SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -63,7 +63,7 @@ jobs:
       - name: Hand the program to SignPath
         id: unsigned
         if: env.SIGNPATH_API_TOKEN != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: PhoneBoxSound-unsigned
           path: release/PhoneBoxSound
@@ -104,7 +104,7 @@ jobs:
           Get-ChildItem out | Format-Table Name, Length
 
       - name: Keep the build (also when nothing is published)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: PhoneBoxSound-${{ github.ref_name }}
           path: out
