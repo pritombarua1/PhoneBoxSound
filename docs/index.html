@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhoneBoxSound: how it works</title>
+<style>
+  :root { --bg: #0b110f; --panel: #121a17; --panel2: #18221e; --line: #24322c; --text: #e9efec; --muted: #94a59d; --accent: #58cf9a; --accent2: #7db4ff; --warn: #f0b429; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: radial-gradient(1000px 520px at 20% -10%, #1c3a2c55, transparent 60%), var(--bg); color: var(--text);
+    font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  header.hero { padding: 72px 0 40px; text-align: center; }
+  .logo { display: inline-flex; align-items: center; gap: 12px; font-weight: 800; font-size: 22px; }
+  .logo svg { width: 34px; height: 34px; stroke: var(--accent); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1.05; letter-spacing: -.03em; margin: 22px 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 19px; color: var(--muted); max-width: 720px; margin: 0 auto; }
+  .tags { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+  .tag { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 14px; font-size: 13.5px; color: var(--muted); }
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  h2 { font-size: 30px; letter-spacing: -.02em; margin: 0 0 6px; }
+  h3 { font-size: 19px; margin: 26px 0 6px; }
+  .kicker { color: var(--accent); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; }
+  p { margin: 8px 0; } .muted { color: var(--muted); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  .grid { display: grid; gap: 18px; } .g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 820px) { .g2, .g3 { grid-template-columns: 1fr; } }
+  code { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: .9em; }
+  pre { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow: auto; font-size: 14px; line-height: 1.5; }
+  .shot { border-radius: 14px; border: 1px solid var(--line); overflow: hidden; background: #000; }
+  .shot img, .shot video { display: block; width: 100%; height: auto; }
+  figure { margin: 0; } figcaption { color: var(--muted); font-size: 13.5px; margin-top: 8px; text-align: center; }
+  .phones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .phones { grid-template-columns: repeat(2, 1fr); } }
+  .phone { border-radius: 30px; border: 3px solid #2b3a33; overflow: hidden; background: #000; box-shadow: 0 20px 50px #0008; }
+  .phone img, .phone video { display: block; width: 100%; }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em; }
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 14px 0 0; }
+  ol.steps li { counter-increment: s; position: relative; padding: 0 0 14px 46px; }
+  ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: #58cf9a22; border: 1px solid #58cf9a66;
+    color: var(--accent); font-weight: 800; display: grid; place-items: center; font-size: 14px; }
+
+  /* ---- animated diagram: audio flowing from the PC to the phones ---- */
+  .flow { width: 100%; height: auto; display: block; }
+  .flow text { fill: var(--text); font: 600 13px system-ui, sans-serif; }
+  .flow .sub { fill: var(--muted); font-weight: 500; font-size: 11.5px; }
+  .flow .box { fill: var(--panel2); stroke: var(--line); stroke-width: 1.5; }
+  .flow .wire { stroke: #2f4239; stroke-width: 2; fill: none; }
+  .flow .pkt { fill: var(--accent); }
+  .flow .cmd { fill: var(--accent2); }
+  @keyframes speak { 0%, 100% { transform: scale(1); opacity: .35; } 8% { transform: scale(1.35); opacity: 1; } 30% { transform: scale(1); opacity: .35; } }
+  .flow .pulse { transform-box: fill-box; transform-origin: center; animation: speak 2.4s infinite; }
+
+  /* ---- animated timeline: same moment on every phone ---- */
+  .tl { position: relative; height: 210px; margin-top: 10px; }
+  .tl .row { position: absolute; left: 0; right: 0; height: 34px; display: flex; align-items: center; }
+  .tl .row span { width: 96px; font-size: 13px; color: var(--muted); flex: none; }
+  .tl .track { position: relative; flex: 1; height: 6px; border-radius: 3px; background: var(--panel2); border: 1px solid var(--line); }
+  .tl .blk { position: absolute; top: -9px; width: 52px; height: 22px; border-radius: 6px; background: var(--accent); opacity: 0; }
+  @keyframes cap { 0% { left: 0; opacity: 0; } 5% { opacity: 1; } 18% { left: 0; opacity: 1; } 22%, 100% { left: 0; opacity: 0; } }
+  @keyframes net1 { 0%, 18% { left: 0; opacity: 0; } 22% { left: 0; opacity: .9; } 34% { left: 22%; opacity: .9; } 78% { left: 22%; opacity: .9; background: #58cf9a; } 80%, 92% { left: 60%; opacity: 1; background: #fff; } 100% { left: 60%; opacity: 0; } }
+  @keyframes net2 { 0%, 18% { left: 0; opacity: 0; } 22% { left: 0; opacity: .9; } 52% { left: 40%; opacity: .9; } 78% { left: 40%; opacity: .9; } 80%, 92% { left: 60%; opacity: 1; background: #fff; } 100% { left: 60%; opacity: 0; } }
+  @keyframes net3 { 0%, 18% { left: 0; opacity: 0; } 22% { left: 0; opacity: .9; } 42% { left: 31%; opacity: .9; } 78% { left: 31%; opacity: .9; } 80%, 92% { left: 60%; opacity: 1; background: #fff; } 100% { left: 60%; opacity: 0; } }
+  .tl .r0 .blk { animation: cap 5s infinite; } .tl .r1 .blk { animation: net1 5s infinite; } .tl .r2 .blk { animation: net2 5s infinite; } .tl .r3 .blk { animation: net3 5s infinite; }
+  .tl .due { position: absolute; top: 34px; bottom: 6px; left: calc(96px + (100% - 96px) * .6 + 26px); width: 2px; background: var(--warn); }
+  .tl .due::after { content: "play at: capture time + sync buffer"; position: absolute; top: -22px; left: -120px; width: 260px; text-align: center; font-size: 12.5px; color: var(--warn); font-weight: 600; }
+
+  @page { margin: 0; }
+  @media print {
+    .wrap { padding: 10mm 12mm; } .kicker { break-after: avoid; } section { break-before: auto; }
+    body { background: var(--bg) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 13.5px; }
+    header.hero { padding: 26px 0 18px; } section { padding: 22px 0; break-inside: auto; }
+    h2 { break-after: avoid; } .card, figure, .shot, .phone, table, pre { break-inside: avoid; }
+    .screen-only { display: none !important; } .print-only { display: block !important; }
+    .phones { grid-template-columns: repeat(4, 1fr); } * { animation: none !important; }
+    .tl .blk { opacity: 1 !important; } .tl .r0 .blk { left: 0; } .tl .r1 .blk { left: 22%; } .tl .r2 .blk { left: 40%; } .tl .r3 .blk { left: 31%; }
+  }
+  .print-only { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="logo"><svg viewBox="0 0 24 24"><path d="M2 12h3l2.5-7 4 14 3-10 2 5 1.5-2H22"/></svg>PhoneBoxSound</div>
+  <h1>Your PC sound. <em>Everywhere.</em></h1>
+  <p class="lead">Turn the phones you already own into synchronised wireless speakers, a media remote and an intercom for your Windows PC. Nothing to install on the phones: they just open a web page.</p>
+  <div class="tags"><span class="tag">No cloud</span><span class="tag">No account</span><span class="tag">No app install</span><span class="tag">Local network only</span><span class="tag">Open source · MIT</span></div>
+</header>
+
+<section>
+  <div class="kicker">See it</div>
+  <h2>The dashboard and the phone app</h2>
+  <p class="muted">Recorded from the real app running in demo mode (a pretend player and synthetic music, so nothing personal is shown).</p>
+  <div class="grid" style="grid-template-columns: 2.3fr 1fr; align-items: start; margin-top: 16px">
+    <figure>
+      <div class="shot screen-only"><video src="media/dashboard.webm" poster="screens/dashboard.png" autoplay muted loop playsinline controls></video></div>
+      <div class="shot print-only"><img src="screens/dashboard.png" alt="Dashboard"></div>
+      <figcaption>Dashboard on the PC: what's playing, every phone, studio layout, audio and pairing.</figcaption>
+    </figure>
+    <figure>
+      <div class="phone screen-only"><video src="media/phone.webm" poster="screens/phone-speaker.png" autoplay muted loop playsinline></video></div>
+      <div class="phone print-only"><img src="screens/phone-speaker.png" alt="Phone speaker screen"></div>
+      <figcaption>The phone: speaker, remote, touchpad, intercom.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Guided tour</div>
+  <h2>Every screen and every setting, explained</h2>
+  <p class="muted">A walk through the whole app with a spoken voice, a marker for where each thing happens (on the PC, on the phone, in the browser) and numbered steps: starting it, connecting phones, speakers, media, controlling the PC, intercom, security, the browser extension, bedtime and each group of settings.</p>
+  <figure style="margin-top:16px">
+    <div class="shot screen-only"><video src="media/tour.mp4" poster="screens/dashboard.png" controls playsinline preload="metadata"></video></div>
+    <figcaption class="screen-only">Prefer to go at your own pace? <a href="tour.html">Open the tour as a page</a>: step with the arrow keys, jump to a chapter.</figcaption>
+    <figcaption class="print-only">The tour is the file docs/tour.html (a page you can step through) and docs/media/tour.mp4 (a video with a spoken voice).</figcaption>
+  </figure>
+  <figure style="margin-top:16px" class="screen-only">
+    <div class="shot"><video src="media/extension-install.mp4" controls playsinline preload="metadata"></video></div>
+    <figcaption><b>Adding the browser extension by hand</b> in Chrome, Edge, Brave, Opera, Vivaldi and Firefox, step by step. <a href="extension-install.html">Open it as a page</a>.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="kicker">Start</div>
+  <h2>One double-click</h2>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">start.bat does the whole thing</h3>
+      <table>
+        <tr><th>If this is missing</th><th>It does this, once</th></tr>
+        <tr><td>Python</td><td>Installs Python 3.13 for your user, with winget or straight from python.org</td></tr>
+        <tr><td>Python packages</td><td>Installs what requirements.txt lists, for your user only</td></tr>
+        <tr><td>The built web app</td><td>Builds it with a portable Node.js from nodejs.org, kept in tools
+ode (a downloaded release already has it)</td></tr>
+        <tr><td>Nothing</td><td>Starts straight away and opens the dashboard</td></tr>
+      </table>
+      <p class="muted" style="margin-bottom:0">Before it downloads anything, the first start shows one screen: what it will download, from where, under which licence, that with winget it accepts winget's agreements for you, and who is responsible for what. Nothing happens until you type Y. <code>start.bat --check</code> only reports what is there and what is missing.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Then</h3>
+      <table>
+        <tr><th>Step</th><th>Where</th></tr>
+        <tr><td>Open the dashboard</td><td>http://localhost:8080 on the PC</td></tr>
+        <tr><td>Connect a phone</td><td>Scan the QR code, or type the address and room code</td></tr>
+        <tr><td>Let it in</td><td>Approve it on the Devices page</td></tr>
+        <tr><td>Give it abilities</td><td>Remote page: one switch per phone and ability</td></tr>
+        <tr><td>Start with Windows</td><td>Settings, first switch</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">How it works</div>
+  <h2>One capture, many phones, one moment</h2>
+  <div class="card" style="margin-top: 14px">
+    <svg class="flow" viewBox="0 0 1000 330" role="img" aria-label="Audio flows from the PC to the phones; commands flow back">
+      <rect class="box" x="20" y="60" width="250" height="210" rx="16"/>
+      <text x="40" y="92">Windows PC</text>
+      <rect class="box" x="40" y="108" width="210" height="40" rx="10"/><text x="54" y="133">System audio (WASAPI)</text>
+      <rect class="box" x="40" y="158" width="210" height="40" rx="10"/><text x="54" y="183">Players: browser, VLC, MPC…</text>
+      <rect class="box" x="40" y="208" width="210" height="40" rx="10"/><text x="54" y="233">Mouse &amp; keyboard</text>
+
+      <rect class="box" x="370" y="90" width="240" height="150" rx="16" style="stroke:#58cf9a88"/>
+      <text x="390" y="122">PhoneBoxSound server</text>
+      <text class="sub" x="390" y="146">timestamps every 10 ms of audio</text>
+      <text class="sub" x="390" y="166">keeps each phone's clock in step</text>
+      <text class="sub" x="390" y="186">finds what's playing, routes remote</text>
+      <text class="sub" x="390" y="206">pairing, permissions, zones</text>
+
+      <path class="wire" id="w0" d="M270 128 H370"/><path class="wire" d="M270 178 H370"/><path class="wire" d="M270 228 H370"/>
+      <path class="wire" id="w1" d="M610 130 C 700 130, 700 60, 790 60"/>
+      <path class="wire" id="w2" d="M610 165 H790"/>
+      <path class="wire" id="w3" d="M610 200 C 700 200, 700 270, 790 270"/>
+      <path id="b2" d="M790 165 H610" fill="none"/><path id="b0" d="M370 178 H270" fill="none"/>
+
+      <g><rect class="box" x="790" y="28" width="190" height="64" rx="14"/><text x="840" y="56">Living Room</text><text class="sub" x="840" y="74">Left channel</text><circle class="pulse" cx="814" cy="60" r="9" fill="#58cf9a"/></g>
+      <g><rect class="box" x="790" y="133" width="190" height="64" rx="14"/><text x="840" y="161">Kitchen</text><text class="sub" x="840" y="179">Right channel + remote</text><circle class="pulse" cx="814" cy="165" r="9" fill="#58cf9a"/></g>
+      <g><rect class="box" x="790" y="238" width="190" height="64" rx="14"/><text x="840" y="266">Desk</text><text class="sub" x="840" y="284">Stereo</text><circle class="pulse" cx="814" cy="270" r="9" fill="#58cf9a"/></g>
+
+      <!-- audio packets -->
+      <g class="pkt">
+        <circle r="5"><animateMotion dur="1.2s" repeatCount="indefinite"><mpath href="#w0"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.2s" begin=".6s" repeatCount="indefinite"><mpath href="#w0"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.6s" repeatCount="indefinite"><mpath href="#w1"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.6s" begin=".8s" repeatCount="indefinite"><mpath href="#w1"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.1s" repeatCount="indefinite"><mpath href="#w2"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.1s" begin=".55s" repeatCount="indefinite"><mpath href="#w2"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.9s" repeatCount="indefinite"><mpath href="#w3"/></animateMotion></circle>
+        <circle r="5"><animateMotion dur="1.9s" begin=".95s" repeatCount="indefinite"><mpath href="#w3"/></animateMotion></circle>
+      </g>
+      <!-- remote commands going back -->
+      <g class="cmd">
+        <rect x="-6" y="-11" width="12" height="7" rx="2"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#b2"/></animateMotion></rect>
+        <rect x="-6" y="-4" width="12" height="7" rx="2"><animateMotion dur="2.6s" begin="1.1s" repeatCount="indefinite"><mpath href="#b0"/></animateMotion></rect>
+      </g>
+      <circle cx="390" cy="290" r="5" class="pkt"/><text class="sub" x="402" y="294">audio (timestamped)</text>
+      <rect x="540" y="286" width="12" height="7" rx="2" class="cmd"/><text class="sub" x="560" y="294">remote commands</text>
+    </svg>
+  </div>
+
+  <div class="grid g2" style="margin-top: 18px">
+    <div class="card">
+      <h3 style="margin-top:0">Why the phones stay together</h3>
+      <p>Packets reach each phone at a different time: Wi-Fi is uneven. So a phone never plays audio "when it arrives". Every 10 ms block carries the moment it was captured, and every phone plays it at the <b>same agreed moment</b>: capture time + sync buffer.</p>
+      <div class="tl">
+        <div class="row r0" style="top:36px"><span>PC captures</span><div class="track"><div class="blk"></div></div></div>
+        <div class="row r1" style="top:80px"><span>Phone A</span><div class="track"><div class="blk"></div></div></div>
+        <div class="row r2" style="top:124px"><span>Phone B</span><div class="track"><div class="blk"></div></div></div>
+        <div class="row r3" style="top:168px"><span>Phone C</span><div class="track"><div class="blk"></div></div></div>
+        <div class="due"></div>
+      </div>
+      <p class="muted" style="font-size:14px">Blocks arrive early, late, in between; all three turn white (play) on the same line.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">The four mechanisms</h3>
+      <ol class="steps">
+        <li><b>Shared clock.</b> Each phone pings the PC and keeps only recent, fast round trips to learn the PC's clock. If new measurements disagree (the browser was asleep), old ones are thrown away at once.</li>
+        <li><b>Scheduled playback.</b> Blocks are queued on the phone's audio hardware clock for an exact sample, not "as soon as possible".</li>
+        <li><b>Drift correction.</b> Tiny errors are absorbed by playing up to 0.4% faster or slower: inaudible, no clicks.</li>
+        <li><b>Adaptive buffer.</b> Each phone reports how much buffer its Wi-Fi really needs; the PC uses the largest, raises it instantly on trouble and lowers it gently.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">On the PC</div>
+  <h2>Dashboard at desktop scale</h2>
+  <div class="grid g2" style="margin-top:16px">
+    <figure><div class="shot"><img src="screens/nowplaying.png" alt=""></div><figcaption><b>Now Playing.</b> Follows whatever you started last and prefers the app actually making sound. Players without cover art show the live video frame.</figcaption></figure>
+    <figure><div class="shot"><img src="screens/presets.png" alt=""></div><figcaption><b>Scenes.</b> Music, Movie, Party, Night, Sync test, or save your own setup.</figcaption></figure>
+    <figure><div class="shot"><img src="screens/intercom.png" alt=""></div><figcaption><b>Intercom.</b> Hold to talk to everyone, a room or one phone. Music ducks while someone speaks.</figcaption></figure>
+    <figure><div class="shot"><img src="screens/remote.png" alt=""></div><figcaption><b>Permissions.</b> Choose per phone: speaker, media remote, intercom, keyboard &amp; mouse.</figcaption></figure>
+  </div>
+  <figure style="margin-top:18px"><div class="shot"><img src="screens/devices.png" alt=""></div><figcaption><b>Devices.</b> Zones, channel, sound profile, fine offset, live health for every phone, and one-click auto-calibration.</figcaption></figure>
+</section>
+
+<section>
+  <div class="kicker">On the phone</div>
+  <h2>The phone app at phone scale</h2>
+  <div class="phones" style="margin-top:16px">
+    <figure><div class="phone"><img src="screens/phone-join.png" alt=""></div><figcaption><b>Join</b> with a 4-digit code or a QR scan.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-speaker.png" alt=""></div><figcaption><b>Speaker.</b> Sync status at a glance.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-remote.png" alt=""></div><figcaption><b>Remote.</b> Drag the timeline to skim; swipe or double-tap the picture to skip.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-speed.png" alt=""></div><figcaption><b>Speed.</b> Slower, normal, faster, or exact presets.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-touchpad.png" alt=""></div><figcaption><b>Touchpad.</b> Tap, drag, two-finger scroll, drag lock, keys, typing.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-screen.png" alt=""></div><figcaption><b>Screen view.</b> The PC screen or the active window, live inside the touchpad.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-clipboard.png" alt=""></div><figcaption><b>Clipboard.</b> Copy on one, paste on the other: text and pictures, both ways.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-keys.png" alt=""></div><figcaption><b>Shortcuts.</b> Hold Ctrl / Shift / Alt / Win with any key, ready-made and personal shortcuts.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-studio.png" alt=""></div><figcaption><b>All speakers.</b> Tune every phone's volume, channel and timing from one phone.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-magnifier.png" alt=""></div><figcaption><b>Magnifier.</b> The area around the PC pointer, enlarged up to 8×, for reading small text.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-pc.png" alt=""></div><figcaption><b>PC panel.</b> See better, your own commands, files, power.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-host.png" alt=""></div><figcaption><b>Host.</b> Play songs stored on a phone on every phone in sync.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-textsize.png" alt=""></div><figcaption><b>Text size.</b> The whole app up to 1.5× larger.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-power.png" alt=""></div><figcaption><b>Power.</b> Lock, sleep, restart, shut down: each asks first.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-power-countdown.png" alt=""></div><figcaption><b>Countdown.</b> Ten seconds to change your mind, on the phone or the PC.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-intercom.png" alt=""></div><figcaption><b>Intercom.</b> Hold, or tap to latch.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-more.png" alt=""></div><figcaption><b>Invite.</b> Any paired phone can show a QR for the next one.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-remote-light.png" alt=""></div><figcaption><b>Themes.</b> Five themes, dark or light.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Security</div>
+  <h2>Who gets in, and what they can touch</h2>
+  <div class="phones" style="margin-top:16px">
+    <figure><div class="phone"><img src="screens/phone-waiting.png" alt=""></div><figcaption><b>Waiting room.</b> The right code only gets a new phone this far, until you approve it.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-approve.png" alt=""></div><figcaption><b>Approve from bed.</b> A phone you trust with that permission can let others in.</figcaption></figure>
+    <figure><div class="phone"><img src="screens/phone-locked.png" alt=""></div><figcaption><b>Locked controls.</b> PC control only on the secure link, for a phone that proved its own key.</figcaption></figure>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <figure><div class="shot"><img src="screens/approval.png" alt=""></div><figcaption>Approve, deny or block on the Devices page; search by name, address, system or id.</figcaption></figure>
+    <figure><div class="shot"><img src="screens/locked.png" alt=""></div><figcaption>The dashboard behind a password; the storage behind it is encrypted.</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Themes</div>
+  <h2>Five themes, light and dark</h2>
+  <div class="grid g2" style="margin-top:16px">
+    <figure><div class="shot"><img src="screens/theme-sand.png" alt=""></div><figcaption>Sand · light</figcaption></figure>
+    <figure><div class="shot"><img src="screens/theme-aurora.png" alt=""></div><figcaption>Aurora · dark</figcaption></figure>
+    <figure><div class="shot"><img src="screens/theme-ocean.png" alt=""></div><figcaption>Ocean · light</figcaption></figure>
+    <figure><div class="shot"><img src="screens/theme-midnight.png" alt=""></div><figcaption>Midnight · dark</figcaption></figure>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Reference</div>
+  <h2>Permissions and settings</h2>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">What each permission allows</h3>
+      <table>
+        <tr><th>Permission</th><th>At first</th><th>The phone can</th></tr>
+        <tr><td><b>Speaker</b></td><td>On</td><td>Plays the PC's sound on this phone, in sync with the others.</td></tr>
+        <tr><td><b>Media remote</b></td><td>On</td><td>Play, pause, skip, seek and volume of what is playing; see the queue; share its link.</td></tr>
+        <tr><td><b>Intercom</b></td><td>On</td><td>Talk to the other phones and the PC, and hear announcements.</td></tr>
+        <tr><td><b>Search and play</b></td><td>On</td><td>Search YouTube, Spotify and Apple Music and start a result on the PC.</td></tr>
+        <tr><td><b>Keyboard & mouse</b></td><td><b>Off</b></td><td>Move the PC's pointer, click, scroll and type: full control of whatever is on screen.</td></tr>
+        <tr><td><b>Clipboard</b></td><td><b>Off</b></td><td>Read what you copied on the PC, and put text or pictures on the PC's clipboard.</td></tr>
+        <tr><td><b>Screen view</b></td><td><b>Off</b></td><td>See the PC's screen (or the active window) live on the phone.</td></tr>
+        <tr><td><b>Power</b></td><td><b>Off</b></td><td>Lock, sleep, restart or shut down the PC, each after a confirmation and a countdown.</td></tr>
+        <tr><td><b>Manage speakers</b></td><td><b>Off</b></td><td>Change every phone's volume, channel and timing, pause all, start the bedtime timer.</td></tr>
+        <tr><td><b>Files</b></td><td><b>Off</b></td><td>Send files to the PC's share folder and download what is in it. Nothing outside that folder.</td></tr>
+        <tr><td><b>PC commands</b></td><td><b>Off</b></td><td>Press the command buttons you made in Settings. A phone can never create or change one.</td></tr>
+        <tr><td><b>Host music</b></td><td><b>Off</b></td><td>Play audio files from this phone on every phone, in place of the PC's sound.</td></tr>
+        <tr><td><b>Approve phones</b></td><td><b>Off</b></td><td>Let a waiting phone in, or turn it away, without going to the PC.</td></tr>
+        <tr><td><b>Shake to lock down</b></td><td><b>Off</b></td><td>Three firm shakes of this phone put the PC into lockdown.</td></tr>
+      </table>
+      <p class="muted" style="margin-bottom:0">Everything marked Off reaches into the PC itself. It stays off until you switch it on for that phone, is withheld from a phone that has not proved its own key while strict security is on, and from every phone during lockdown.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Every setting</h3>
+      <table>
+        <tr><th>Setting</th><th>What it does</th></tr>
+        <tr><td><b>Start with Windows</b></td><td>Starts quietly when you sign in, with a tray icon. Off: it only runs when you start it.</td></tr>
+        <tr><td><b>Appearance</b></td><td>Dark / light / system, five themes, interface size. Phones follow unless they choose their own.</td></tr>
+        <tr><td><b>Commands</b></td><td>Buttons that run a program or script on this PC, for phones with the PC commands permission.</td></tr>
+        <tr><td><b>Files</b></td><td>The one folder phones with the Files permission can send to and download from.</td></tr>
+        <tr><td><b>Room code, addresses, port</b></td><td>New code any time. Changing the port moves connected phones along.</td></tr>
+        <tr><td><b>Advertise as phoneboxsound.local</b></td><td>Lets phones use a name instead of a number address.</td></tr>
+        <tr><td><b>Secure server / warning-free https</b></td><td>https on the same port. The warning-free address removes the browser warning; it needs internet.</td></tr>
+        <tr><td><b>Approve new phones</b></td><td>The code alone is not enough: a new phone waits until you approve it.</td></tr>
+        <tr><td><b>Lockdown</b></td><td>No phone controls the PC, no new phones, no remote API. Phones keep playing.</td></tr>
+        <tr><td><b>Strict security</b></td><td>PC controls only for phones that proved their own key on the secure address.</td></tr>
+        <tr><td><b>PC speakers in step</b></td><td>Delays the PC's own speakers or headphones to match the phones.</td></tr>
+        <tr><td><b>Lighter stream on poor Wi-Fi</b></td><td>A struggling phone gets half the data until its connection recovers, and is told to come closer.</td></tr>
+        <tr><td><b>Auto buffer, minimum, maximum</b></td><td>How far behind the PC the phones play. Auto adapts it to your Wi-Fi within the limits.</td></tr>
+        <tr><td><b>Lip-sync</b></td><td>Shifts the player's audio so phones match the picture (VLC, MPC-HC, mpv).</td></tr>
+        <tr><td><b>Player integrations</b></td><td>One-click VLC setup, mpv pipe, MPC full control, the browser extension.</td></tr>
+        <tr><td><b>Search keys, Spotify account</b></td><td>Optional YouTube key; your Spotify app's ID to link your account.</td></tr>
+        <tr><td><b>Password & encrypted storage</b></td><td>Dashboard password; settings encrypted with it; ask at every server start or not.</td></tr>
+        <tr><td><b>API & automation</b></td><td>Token, example commands, webhooks.</td></tr>
+        <tr><td><b>Diagnostics</b></td><td>Health at a glance and an export with no secrets in it.</td></tr>
+        <tr><td><b>Activity record (Activity page)</b></td><td>The two-day record of what each phone did. Switch it off entirely, or erase it.</td></tr>
+        <tr><td><b>On each phone: More</b></td><td>Theme, text size, timing, shake to lock down. Pad options: pointer speed, open the keyboard by itself.</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Details</div>
+  <h2>What controls what</h2>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">Players</h3>
+      <table>
+        <tr><th>Player</th><th>Setup</th><th>What you get</th></tr>
+        <tr><td>Chrome, Edge, Firefox, Spotify, Windows apps</td><td>None</td><td>Title, artwork, timeline, seek, play/pause, next/previous</td></tr>
+        <tr><td>MPC-HC / MPC-BE (K-Lite)</td><td>None</td><td>Timeline read from its window, seek, volume, speed, subtitles, fullscreen, live frame as artwork</td></tr>
+        <tr><td>PotPlayer</td><td>None</td><td>Timeline, seek, volume, speed, fullscreen</td></tr>
+        <tr><td>VLC 3</td><td>One click</td><td>Everything, plus automatic lip-sync</td></tr>
+        <tr><td>mpv</td><td>One flag</td><td>Everything</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Safety</h3>
+      <table>
+        <tr><td><b>Pairing</b></td><td>The 4-digit code only reaches the waiting room: you approve each new phone. Five wrong codes lock that address out for a minute. The code can never take over a phone that is already paired.</td></tr>
+        <tr><td><b>Identity</b></td><td>On the secure link each phone holds a key that can't be copied off it and signs in with it. A stolen id or token is refused.</td></tr>
+        <tr><td><b>Lockdown</b></td><td>One button: every phone keeps playing, none can control the PC, nobody new can join.</td></tr>
+        <tr><td><b>Storage</b></td><td>Password-protected and encrypted. A changed, swapped or missing file stops the server from starting.</td></tr>
+        <tr><td><b>Roles</b></td><td>Speaker, media remote, intercom, and eight that reach into the PC itself and stay off until you enable them: keyboard &amp; mouse, clipboard, screen view, power, managing all speakers, files, commands, hosting music. A phone can also be blocked outright.</td></tr>
+        <tr><td><b>Dashboard</b></td><td>Only this PC, and only with the password (or the API token). Phones can't download its code. Other websites are refused, pages can't be framed or injected into.</td></tr>
+        <tr><td><b>Network</b></td><td>Everything stays on your local network. Player web interfaces are bound to this PC only.</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">Terms</div>
+  <h2>Disclaimer</h2>
+  <p>PhoneBoxSound is free software under the MIT License, provided <b>as is</b>, without warranty of any kind. The authors and contributors are not liable for any damage, loss or other consequence of using it, of copies or changed versions made by others, or of how anyone uses it. It can give phones control over the PC it runs on: use it only on computers, networks and devices you own or are allowed to use. Using it to harm, spy on, harass or get into other people's devices, accounts or data is forbidden. You are responsible for who you let connect and what you allow them to do. Not affiliated with any company or product it mentions. Full text: DISCLAIMER.md.</p>
+</section>
+
+<section>
+  <div class="kicker">Under the hood</div>
+  <h2>Architecture</h2>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h3 style="margin-top:0">Server · Python</h3>
+      <table>
+        <tr><td><code>audio.py</code></td><td>WASAPI loopback capture, timestamps, packet format</td></tr>
+        <tr><td><code>hub.py</code></td><td>Devices, pairing, routing, adaptive buffer, intercom, zones, scenes</td></tr>
+        <tr><td><code>media.py</code>, <code>players.py</code></td><td>Finds what is playing and controls it</td></tr>
+        <tr><td><code>snap.py</code>, <code>desktop.py</code></td><td>Video frame for artwork; clipboard and screen view</td></tr>
+        <tr><td><code>calibrate.py</code></td><td>Chirp detection: aligns phones through the PC microphone</td></tr>
+        <tr><td><code>app.py</code></td><td>HTTP/HTTPS, WebSockets, REST API</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Web app · React + TypeScript + Vite</h3>
+      <table>
+        <tr><td><code>web/src/player</code></td><td>Phone app. <code>engine.ts</code> does sync and playback outside React, so 100 packets a second never wait for a render</td></tr>
+        <tr><td><code>web/src/control</code></td><td>Dashboard; each page is a lazy-loaded chunk</td></tr>
+        <tr><td><code>web/src/lib</code></td><td>Clock sync, wire format, intercom audio, UI kit, tiny store</td></tr>
+      </table>
+      <p class="muted" style="font-size:14px">Builds are content-hashed, so phones always load the current version.</p>
+    </div>
+  </div>
+  <h3>Run it</h3>
+  <pre>npm install          # once
+npm run setup        # once: Python dependencies
+npm run dev          # server + live-reloading UI  →  http://localhost:5173/control
+npm run build        # production build into web/dist
+npm start            # build, then run            →  http://localhost:8080/control
+npm run docs         # regenerate these screenshots, videos and the PDF (also an end-to-end test)
+npm run package      # standalone Windows build  →  release/PhoneBoxSound-win64.zip</pre>
+</section>
+
+<footer style="padding: 30px 0 60px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)">
+  PhoneBoxSound · MIT licence · screenshots generated by <code>npm run docs</code> from the running app.
+</footer>
+</div>
+</body>
+</html>

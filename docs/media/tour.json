@@ -1,0 +1,421 @@
+[
+ {
+  "title": "Start it with one double-click",
+  "text": "Double-click start.bat. The first time it fetches what is missing by itself (Python, its packages, the web app), then opens this dashboard at http://localhost:8080. Nothing is ever installed on a phone.",
+  "steps": [
+   "Double-click start.bat",
+   "Wait for the browser to open the dashboard",
+   "Leave the window open, or use the tray icon"
+  ]
+ },
+ {
+  "title": "Connect a phone",
+  "text": "Point the phone's camera at the QR code, or type the address and the room code. Use the secure (https) address: it gives the phone its own key, which the microphone and PC control need.",
+  "steps": [
+   "Open the phone's camera",
+   "Point it at the QR code",
+   "Tap the link that appears"
+  ]
+ },
+ {
+  "title": "On the phone it is just a web page",
+  "text": "iPhone or Android, any modern browser. Add it to the home screen and it opens like an app.",
+  "steps": [
+   "Type the 4-digit room code",
+   "Tap Join",
+   "Optional: Share, then Add to Home Screen"
+  ]
+ },
+ {
+  "title": "You decide who gets in",
+  "text": "With \"Approve new phones\" on, knowing the code is not enough: a new phone waits here until you press Approve. Deny turns it away, Block keeps its address out.",
+  "steps": [
+   "Open Devices on the PC",
+   "Find the waiting phone",
+   "Press Approve"
+  ]
+ },
+ {
+  "title": "What the waiting phone sees",
+  "text": "It can do nothing at all until it is approved: no sound, no remote, no PC control.",
+  "steps": []
+ },
+ {
+  "title": "Every phone is a speaker",
+  "text": "The PC's sound plays on all phones at the same moment. Each phone has its own volume, channel (left, right, stereo), sound shape and quality. \"Remote mode\" keeps the controls but plays no sound on this phone.",
+  "steps": [
+   "Tap \"Play PC audio here\"",
+   "Set this phone's volume",
+   "Pick left, right or stereo"
+  ]
+ },
+ {
+  "title": "Devices: one row per phone",
+  "text": "Rename a phone, set its volume, channel, zone and timing, see its connection quality and which system it runs. Verify its key, block it, or forget it. Blocked addresses sit at the top; Past devices keeps a record of phones that left.",
+  "steps": [
+   "Click a phone's name to rename it",
+   "Drag its volume and timing",
+   "Use Block or Forget to remove it"
+  ]
+ },
+ {
+  "title": "The PC's own speakers, in step",
+  "text": "Phones play a moment later than the PC (the sync buffer). Switch this on and the PC's speakers or headphones are delayed by the same amount, so the room is one sound. Windows' default output must be a different device from the one you listen on.",
+  "steps": [
+   "Open Settings, then Sync",
+   "Pick the speakers you listen on",
+   "Switch \"PC speakers in step\" on"
+  ]
+ },
+ {
+  "title": "Presets: one tap sets the room",
+  "text": "Music, Movie, Party, Night and Sync test set every phone's channel, loudness and buffer at once. Change them or restore the defaults.",
+  "steps": [
+   "Open Presets",
+   "Press Music, Movie, Party or Night"
+  ]
+ },
+ {
+  "title": "Manage speakers from a phone",
+  "text": "A phone with the \"Manage speakers\" permission can change every phone's volume, channel and timing, pause all, and start the bedtime timer.",
+  "steps": []
+ },
+ {
+  "title": "Play music from a phone",
+  "text": "With \"Host music\", audio files on a phone play on every phone, in place of the PC's sound.",
+  "steps": []
+ },
+ {
+  "title": "Now Playing: one remote for everything",
+  "text": "Whatever plays on the PC shows here: browsers, Spotify, VLC, MPC-HC, mpv, PotPlayer and other Windows apps. Play, pause, skip, seek, volume and speed. Pick which player the remote controls.",
+  "steps": []
+ },
+ {
+  "title": "Spotify, properly",
+  "text": "Link your Spotify account in Settings and you get the real queue, exact repeat (off, all, this song), shuffle, Liked Songs and your playlists. Spotify does not let other apps reorder or remove queue items.",
+  "steps": [
+   "Settings, Search: paste your Spotify app's ID",
+   "Press Connect and sign in to Spotify",
+   "Queue, likes and playlists appear here"
+  ]
+ },
+ {
+  "title": "Search and play",
+  "text": "Type a song or video: results from YouTube, Spotify and Apple Music come with pictures, and one tap plays it on the PC. Other services (Netflix, Prime and more) open as links.",
+  "steps": [
+   "Type a song or a video",
+   "Click a result to play it on the PC"
+  ]
+ },
+ {
+  "title": "Share what is playing",
+  "text": "A link and a QR code for the current song or video, with its picture, so anyone can open it on their own device.",
+  "steps": [
+   "Press the share button",
+   "Scan the QR code, or copy the link"
+  ]
+ },
+ {
+  "title": "The phone's Remote tab",
+  "text": "The same remote in your hand: cover, title, seek bar, play and skip, jump 10 seconds back or forward, volume of the player and of the PC. Swipe the cover left or right to skip.",
+  "steps": [
+   "Open the Remote tab",
+   "Use play, skip and the seek bar",
+   "Swipe the cover to change song"
+  ]
+ },
+ {
+  "title": "Spotify on the phone",
+  "text": "Like, repeat, shuffle, the next songs and your playlists, all from the phone.",
+  "steps": []
+ },
+ {
+  "title": "Search on the phone",
+  "text": "Tap Search and the keyboard opens at once on a full screen of its own. Results are the only list on screen. Tap one to play it on the PC, or \"Play next\" to queue a Spotify song.",
+  "steps": [
+   "Tap Search: the keyboard opens",
+   "Type and pick a result",
+   "\"Play next\" queues a Spotify song"
+  ]
+ },
+ {
+  "title": "Playlists",
+  "text": "Play one of your playlists, or save the current song into one. If the song is already in that playlist it asks first: add again, or replace so it is there once.",
+  "steps": [
+   "Tap \"Add this song to a playlist\"",
+   "Tap a playlist",
+   "If it is already there: Add again or Replace"
+  ]
+ },
+ {
+  "title": "Several players at once",
+  "text": "When more than one thing is playing, choose which one the remote controls.",
+  "steps": []
+ },
+ {
+  "title": "Who can control this PC",
+  "text": "One switch per phone and per ability. Everything that reaches into the PC is OFF until you switch it on: keyboard and mouse, clipboard, screen view, power, files, commands, hosting music, approving phones, shake to lock down. A legend under the table says what each one allows.",
+  "steps": [
+   "Open Remote on the PC",
+   "Find the phone's column",
+   "Switch on only what that phone should do"
+  ]
+ },
+ {
+  "title": "Touchpad",
+  "text": "Needs \"Keyboard & mouse\". Move the pointer, tap to click, two fingers to scroll or right-click, tap-then-hold to drag. Speed and drag lock are under Pad options.",
+  "steps": [
+   "Remote tab, then PC",
+   "Slide a finger to move the pointer",
+   "Tap to click, two fingers to scroll"
+  ]
+ },
+ {
+  "title": "The keyboard opens by itself",
+  "text": "Tap a text box on the PC and the phone's keyboard comes up; what you type goes to the PC key by key. If the iPhone keeps the keyboard down, the bar says \"Tap here to type\": one tap on it brings it up. The switch for this is under Pad options.",
+  "steps": [
+   "Move the pointer onto a text box",
+   "Tap: the keyboard comes up",
+   "Type; press Done when finished"
+  ]
+ },
+ {
+  "title": "Keys and shortcuts",
+  "text": "Ctrl, Shift, Alt, Win, arrows, function keys, ready-made shortcuts and your own. In the type box, Enter starts a new line; Send (or Shift+Enter) types the whole text on the PC.",
+  "steps": [
+   "Write in the type box",
+   "Enter makes a new line",
+   "Press Send to type it on the PC"
+  ]
+ },
+ {
+  "title": "See the PC's screen",
+  "text": "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound.",
+  "steps": [
+   "Switch \"Screen view\" on for the phone",
+   "On the phone, open Pad options",
+   "Choose whole screen or active window"
+  ]
+ },
+ {
+  "title": "Magnifier",
+  "text": "A zoomed view that follows the pointer, for small buttons and text.",
+  "steps": []
+ },
+ {
+  "title": "Clipboard",
+  "text": "Needs \"Clipboard\". Read what was copied on the PC, or send text and pictures to the PC's clipboard.",
+  "steps": []
+ },
+ {
+  "title": "Files, commands and power",
+  "text": "Send files into the PC's share folder and download what is in it (nothing outside it). Press the command buttons you made in Settings. A phone can never create a command.",
+  "steps": []
+ },
+ {
+  "title": "Power asks first",
+  "text": "Lock, sleep, restart and shut down each ask for confirmation, then count down so anyone at the PC can cancel.",
+  "steps": [
+   "Tap Lock, Sleep, Restart or Shut down",
+   "Confirm",
+   "Cancel during the countdown if needed"
+  ]
+ },
+ {
+  "title": "Intercom and announcements",
+  "text": "Talk between phones and the PC. Type an announcement and the PC speaks it on every phone, with a doorbell sound first if you like. Your own voice is never played back to you, so there is no echo.",
+  "steps": [
+   "Open Intercom",
+   "Type an announcement",
+   "Choose a sound and press Announce"
+  ]
+ },
+ {
+  "title": "Intercom on the phone",
+  "text": "Hold to talk, to everyone or to one phone. The microphone only works on the secure address.",
+  "steps": [
+   "Open the Intercom tab",
+   "Hold the button and talk",
+   "Let go to stop"
+  ]
+ },
+ {
+  "title": "A password for the dashboard",
+  "text": "Set a password and every setting is stored encrypted with it. The dashboard, and optionally every server start, asks for it. Without the password the stored file cannot be read or swapped for another.",
+  "steps": [
+   "Settings, Password: set a password",
+   "Choose whether to ask at every start",
+   "Type it here to open the dashboard"
+  ]
+ },
+ {
+  "title": "Lockdown",
+  "text": "One button: phones keep playing, but none can control the PC, no new phone can join and the remote API is closed.",
+  "steps": [
+   "Press Lockdown at the top",
+   "Press it again to lift it"
+  ]
+ },
+ {
+  "title": "What phones see in lockdown",
+  "text": "PC controls show as locked on every phone until you lift it.",
+  "steps": []
+ },
+ {
+  "title": "Guest pass",
+  "text": "A QR code for visitors: speaker only, for a few hours, then they are disconnected and their record removed. No remote, no intercom, no PC control.",
+  "steps": [
+   "Devices, then Guest pass",
+   "Pick how many hours",
+   "Let the visitor scan the code"
+  ]
+ },
+ {
+  "title": "Approve from a phone",
+  "text": "A phone with the \"Approve phones\" permission can let a waiting phone in or turn it away without going to the PC.",
+  "steps": []
+ },
+ {
+  "title": "Security digest",
+  "text": "Where things stand (password, strict security, lockdown, phones with their own key) and what happened in the last 30 days: denied attempts, blocks, lockdowns.",
+  "steps": []
+ },
+ {
+  "title": "Activity: a two-day record per phone",
+  "text": "Every tap and every request of each phone with millisecond times, matched to what the PC answered. The switch at the top turns recording off entirely; \"What is recorded?\" explains it. Erase one phone's record or all.",
+  "steps": [
+   "Open Activity",
+   "Pick a phone",
+   "Use the switch at the top to stop recording"
+  ]
+ },
+ {
+  "title": "Replay, like a camera recording",
+  "text": "Play back what a phone's screen showed, moment by moment, with a timeline to jump along.",
+  "steps": [
+   "Press Replay on a moment",
+   "Drag the timeline",
+   "Close with the cross"
+  ]
+ },
+ {
+  "title": "The browser extension",
+  "text": "For Chrome, Edge and Firefox: per-tab control of videos and music, with the picture delayed to match the phones so lips stay in sync.",
+  "steps": [
+   "Settings, Player integrations",
+   "Press \"How to add it\"",
+   "Follow the steps for your browser"
+  ]
+ },
+ {
+  "title": "Each browser asks once",
+  "text": "A browser with the extension shows up here and does nothing until you approve it.",
+  "steps": [
+   "Open the browser with the extension",
+   "Come back to the dashboard",
+   "Press Approve"
+  ]
+ },
+ {
+  "title": "Bedtime fade",
+  "text": "Pick a time: the sound fades out on every phone, and the PC can then lock, sleep or shut down.",
+  "steps": [
+   "Pick the time",
+   "Choose lock, sleep or shut down",
+   "Press Start"
+  ]
+ },
+ {
+  "title": "Start with Windows",
+  "text": "On: PhoneBoxSound starts quietly when you sign in to Windows, with its icon in the tray. Off: it only runs when you start it.",
+  "steps": [
+   "Open Settings",
+   "Flip the first switch"
+  ]
+ },
+ {
+  "title": "Appearance",
+  "text": "Dark, light or follow the system; five colour themes; interface size. Phones follow unless they choose their own.",
+  "steps": []
+ },
+ {
+  "title": "Commands",
+  "text": "Make buttons that run a program or script on this PC. Phones with the \"PC commands\" permission can press them, never create or change them.",
+  "steps": [
+   "Type a name and what to run",
+   "Press Add",
+   "Give a phone the \"PC commands\" permission"
+  ]
+ },
+ {
+  "title": "Files",
+  "text": "The one folder phones with the \"Files\" permission can send to and download from.",
+  "steps": []
+ },
+ {
+  "title": "Pairing & network",
+  "text": "The room code (make a new one any time), the addresses phones use, and the port (changing it moves connected phones along). Switches: advertise as phoneboxsound.local, the secure server, the warning-free https address, Approve new phones, Lockdown, Strict security (PC controls only for phones that proved their key). Disconnect all phones is here too.",
+  "steps": [
+   "\"New code\" changes the room code",
+   "Type a port and press Move to change it",
+   "Flip Approve, Lockdown and Strict as needed"
+  ]
+ },
+ {
+  "title": "Sync",
+  "text": "The PC's own speakers in step with the phones; a lighter stream for a phone on poor Wi-Fi (it also tells you to come closer); automatic buffer with its minimum and maximum; lip-sync for VLC, MPC-HC and mpv.",
+  "steps": []
+ },
+ {
+  "title": "Player integrations",
+  "text": "Browsers, Spotify and Windows apps work by themselves. VLC, MPC-HC and mpv get a one-click or one-line setup for full timeline control. The browser extension is offered here.",
+  "steps": []
+ },
+ {
+  "title": "Search",
+  "text": "Optional keys: a YouTube key (without one, search still works), and your Spotify app's ID to link your account for queue, likes and playlists.",
+  "steps": [
+   "Paste a YouTube key (optional)",
+   "Paste your Spotify app's ID",
+   "Press Connect"
+  ]
+ },
+ {
+  "title": "Password & encrypted storage",
+  "text": "Set, change or remove the dashboard password, and choose whether it is asked at every server start.",
+  "steps": [
+   "Type a password twice",
+   "Press Set password",
+   "Keep it safe: it cannot be recovered"
+  ]
+ },
+ {
+  "title": "API & automation",
+  "text": "A token and ready-made commands to control PhoneBoxSound from scripts or a smart-home hub, and webhooks that tell other programs when something happens.",
+  "steps": []
+ },
+ {
+  "title": "Diagnostics",
+  "text": "Versions, audio device and health at a glance. Export makes a report with no tokens or passwords in it, to attach to a bug report.",
+  "steps": []
+ },
+ {
+  "title": "More: this phone's own settings",
+  "text": "Invite another phone with a QR code, choose this phone's theme and text size, fine-tune its timing, switch \"Shake to lock down\" on (three firm shakes lock the PC down, if the permission is given).",
+  "steps": [
+   "Open the More tab",
+   "Pick theme and text size",
+   "Show the QR code to invite a phone"
+  ]
+ },
+ {
+  "title": "Text size",
+  "text": "Make everything on the phone larger or smaller.",
+  "steps": []
+ },
+ {
+  "title": "Light or dark, five themes",
+  "text": "Phones follow the PC's theme unless they choose their own. Switches, tabs and buttons keep a strong outline in every theme.",
+  "steps": []
+ }
+]

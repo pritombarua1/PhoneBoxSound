@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.vbs text eol=crlf
+*.png binary
+*.webm binary
+*.pdf binary
+*.ico binary
+docs/PhoneBoxSound-Guide.pdf linguist-documentation
+docs/** linguist-documentation
+*.mp4 binary

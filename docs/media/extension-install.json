@@ -1,0 +1,69 @@
+[
+ {
+  "title": "Get the extension from your own PC",
+  "text": "The extension is inside PhoneBoxSound. Until it is in the browser stores, you add it by hand: about a minute per browser.",
+  "steps": [
+   "Open Settings, then Player integrations",
+   "Press \"How to add it\"",
+   "Download the zip and unzip it into a folder you will keep"
+  ]
+ },
+ {
+  "title": "Google Chrome",
+  "text": "Chrome only loads an extension from a folder when Developer mode is on.",
+  "steps": [
+   "Type chrome://extensions in the address bar",
+   "Switch Developer mode on, top right",
+   "Press Load unpacked",
+   "Choose the unzipped folder"
+  ]
+ },
+ {
+  "title": "Microsoft Edge",
+  "text": "Edge works the same way; its Developer mode switch is on the left.",
+  "steps": [
+   "Type edge://extensions in the address bar",
+   "Switch Developer mode on, on the left",
+   "Press Load unpacked",
+   "Choose the unzipped folder"
+  ]
+ },
+ {
+  "title": "Brave, Opera and Vivaldi",
+  "text": "These are built like Chrome. Only the address differs: brave://extensions, opera://extensions or vivaldi://extensions.",
+  "steps": [
+   "Open the browser's extensions page",
+   "Switch Developer mode on",
+   "Press Load unpacked",
+   "Choose the unzipped folder"
+  ]
+ },
+ {
+  "title": "Mozilla Firefox",
+  "text": "Firefox loads it for this session only: after closing Firefox you load it again. A signed file from addons.mozilla.org installs it for good.",
+  "steps": [
+   "Type about:debugging in the address bar",
+   "Click This Firefox",
+   "Press Load Temporary Add-on",
+   "Choose manifest.json in the unzipped folder"
+  ]
+ },
+ {
+  "title": "Approve the browser once",
+  "text": "The new browser shows up on the dashboard as \"wants to connect\". It can do nothing until you approve it. It only ever talks to PhoneBoxSound on this same PC.",
+  "steps": [
+   "Go back to the dashboard",
+   "Find the browser under Player integrations",
+   "Press Approve"
+  ]
+ },
+ {
+  "title": "Every tab is its own player",
+  "text": "Each tab that plays shows up on the phone by itself, with exact seeking, speed and volume, and the picture kept in step with the phones.",
+  "steps": [
+   "Play a video in the browser",
+   "Open Remote on the phone",
+   "Pick the tab and control it"
+  ]
+ }
+]

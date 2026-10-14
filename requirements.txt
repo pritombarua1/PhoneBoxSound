@@ -1,0 +1,21 @@
+# Server
+aiohttp>=3.9
+numpy
+segno                      # QR codes
+pillow                     # artwork, screen view, tray icon
+cryptography               # self-signed certificate for the https page (microphone / install)
+zeroconf                   # phoneboxsound.local
+pystray                    # tray icon
+yt-dlp                     # YouTube search results without an API key (optional: remove it and add a key in Settings instead)
+
+# Windows: audio capture, media sessions, volume
+pyaudiowpatch; sys_platform == "win32"
+pycaw; sys_platform == "win32"
+comtypes; sys_platform == "win32"            # Windows accessibility: is the pointer on a text box?
+psutil; sys_platform == "win32"
+winrt-runtime; sys_platform == "win32"
+winrt-Windows.Foundation; sys_platform == "win32"
+winrt-Windows.Foundation.Collections; sys_platform == "win32"
+winrt-Windows.Media; sys_platform == "win32"
+winrt-Windows.Media.Control; sys_platform == "win32"
+winrt-Windows.Storage.Streams; sys_platform == "win32"

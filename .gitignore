@@ -1,0 +1,23 @@
+# local state
+config.json
+config.json.tmp
+config.json.broken
+data/
+docs/.demo-config.json*
+
+# builds and dependencies
+node_modules/
+web/dist/
+build/
+release/
+*.spec
+__pycache__/
+*.pyc
+.pytest_cache/
+config.vault
+config.vault.tmp
+config.vault.seal
+docs/.demo-config.*
+docs/.demo-config-journal/
+data/journal/
+tools/

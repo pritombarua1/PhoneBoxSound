@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "PhoneBoxSound: a second hand for your browser",
+  "short_name": "PhoneBoxSound",
+  "version": "1.2.0",
+  "description": "Control the video or music in any tab from your phone through PhoneBoxSound on this PC: play, pause, seek, speed, volume, for every tab separately.",
+  "icons": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" },
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js", "scripts": ["config.js", "background.js"] },
+  "content_scripts": [{ "matches": ["<all_urls>"], "js": ["content.js"], "all_frames": true, "run_at": "document_idle" }],
+  "options_ui": { "page": "options.html", "open_in_tab": false },
+  "action": { "default_title": "PhoneBoxSound", "default_popup": "options.html", "default_icon": { "16": "icon-16.png", "32": "icon-32.png" } },
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'none'; connect-src ws://127.0.0.1:*" },
+  "browser_specific_settings": { "gecko": { "id": "tabs@phoneboxsound.local", "strict_min_version": "121.0" } }
+}
