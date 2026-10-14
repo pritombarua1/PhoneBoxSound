@@ -1,0 +1,120 @@
+# Builds, tests, signs and publishes PhoneBoxSound on GitHub's own Windows machines.
+#
+#   Publish a new version:  set the version in package.json, phoneboxsound/__init__.py and CITATION.cff,
+#                           commit, then:  git tag v3.2.0 && git push origin v3.2.0
+#   Try the build only:     Actions → Release → Run workflow (nothing is published)
+#
+# Signing: once SignPath (https://signpath.org) has approved the project, add these repository secrets
+# (Settings → Secrets and variables → Actions) and every build is signed from then on:
+#   SIGNPATH_API_TOKEN, SIGNPATH_ORGANIZATION_ID
+# and these repository variables (same page, "Variables" tab) if yours differ from the defaults:
+#   SIGNPATH_PROJECT_SLUG (default PhoneBoxSound), SIGNPATH_POLICY_SLUG (default release-signing)
+# Without them the build is published unsigned, exactly as before.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Version matches the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $want = "${{ github.ref_name }}".TrimStart("v")
+          $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $py = (Select-String -Path phoneboxsound/__init__.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
+          if ($pkg -ne $want -or $py -ne $want) { throw "Tag $want, but package.json says $pkg and __init__.py says $py" }
+
+      - name: Install
+        run: |
+          npm ci --no-fund --no-audit
+          python -m pip install --disable-pip-version-check -r requirements-dev.txt "setuptools<81"
+
+      - name: Test
+        run: python -m pytest tests -q
+
+      - name: Build
+        run: |
+          npm run package
+          npm run package:extension
+
+      - name: Hand the program to SignPath
+        id: unsigned
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhoneBoxSound-unsigned
+          path: release/PhoneBoxSound
+
+      - name: Sign
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'PhoneBoxSound' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Pack the signed program
+        if: env.SIGNPATH_API_TOKEN != ''
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force release/PhoneBoxSound, release/PhoneBoxSound-win64.zip
+          New-Item -ItemType Directory release/PhoneBoxSound | Out-Null
+          Copy-Item -Recurse signed/* release/PhoneBoxSound/
+          $sig = Get-AuthenticodeSignature release/PhoneBoxSound/PhoneBoxSound.exe
+          if ($sig.Status -ne "Valid") { throw "PhoneBoxSound.exe is not signed: $($sig.Status)" }
+          Compress-Archive -Path release/PhoneBoxSound -DestinationPath release/PhoneBoxSound-win64.zip
+
+      - name: Gather the downloads
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory out | Out-Null
+          Copy-Item release/PhoneBoxSound-win64.zip, release/PhoneBoxSound-extension-chrome.zip, release/PhoneBoxSound-extension-firefox.zip out/
+          Copy-Item docs/media/tour.mp4 out/PhoneBoxSound-guided-tour.mp4
+          Copy-Item docs/media/extension-install.mp4 out/PhoneBoxSound-extension-install.mp4
+          Copy-Item docs/PhoneBoxSound-Guide.pdf out/
+          $signed = if ($env:SIGNPATH_API_TOKEN) { "signed" } else { "not signed yet" }
+          (Get-Content .github/release-notes.md -Raw).Replace("{SIGNED}", $signed) | Set-Content out/notes.md
+          Get-ChildItem out | Format-Table Name, Length
+
+      - name: Keep the build (also when nothing is published)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhoneBoxSound-${{ github.ref_name }}
+          path: out
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem out -Exclude notes.md | ForEach-Object { $_.FullName }
+          $title = "PhoneBoxSound " + "${{ github.ref_name }}".TrimStart("v")
+          gh release create "${{ github.ref_name }}" @files --title $title --notes-file out/notes.md --latest

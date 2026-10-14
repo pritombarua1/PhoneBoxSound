@@ -512,6 +512,9 @@ Copyright (C) 2026 Pritom Barua. Free software under the **GNU General Public Li
   a link here, publish your full source under the same licence, and use a different name and logo.
   It may not be turned into a closed-source product.
 
+**Releases** are built, tested and published automatically from this source code by GitHub Actions;
+see the [code signing policy](CODE_SIGNING.md).
+
 **Citing it:** use the *Cite this repository* button on the right of the GitHub page
 ([CITATION.cff](CITATION.cff)).
 
