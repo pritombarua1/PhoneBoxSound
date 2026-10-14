@@ -36,6 +36,11 @@ You need a Windows 10 or 11 PC and phones on the same Wi-Fi. Nothing is installe
 `PhoneBoxSound-win64.zip`, unzip it anywhere and double-click `PhoneBoxSound.exe`. Everything it needs is
 inside; nothing else is downloaded or installed.
 
+**Code signing:** Windows releases are built by GitHub Actions and signed through the
+[SignPath Foundation](https://signpath.org): free code signing provided by [SignPath.io](https://signpath.io),
+certificate by SignPath Foundation. Until the project's application is approved, releases are unsigned and the
+release notes say so. See the [code signing policy](CODE_SIGNING.md) and the [privacy policy](PRIVACY.md).
+
 **From the source code: double-click `start.bat`.** It sets up whatever is missing by itself, once:
 
 | If this is missing | `start.bat` gets it from | Notes |

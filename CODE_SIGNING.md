@@ -28,4 +28,4 @@ Third-party files bundled with it keep their own publishers' signatures.
 PhoneBoxSound does not send any information to the author or to any other networked system unless the
 user asks for it: it serves phones on the user's own local network, and contacts outside services
 (Spotify, YouTube, iTunes search, the local-ip.sh certificate) only when the user switches those features
-on. There is no telemetry, analytics or account. See [DISCLAIMER.md](DISCLAIMER.md).
+on. There is no telemetry, analytics or account. Full text: [PRIVACY.md](PRIVACY.md).
