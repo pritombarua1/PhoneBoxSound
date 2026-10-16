@@ -28,6 +28,11 @@ export default memo(function Touchpad() {
   // The phone's keyboard, opened by itself when you tap a text box on the PC; what you type goes there key by key.
   const live = useRef<HTMLInputElement>(null);
   const [autoKb, setAutoKb] = useState(() => store.get("pbs.autokb", "1") !== "0");
+  // Screen mode: this phone alone has the screen, at the best quality, with its sound timed to the picture;
+  // the other phones pause until it ends. Needs Screen view and Manage speakers.
+  const [exclusive, setExclusive] = useState(() => store.get("pbs.screenmode", "0") === "1");
+  const mayExclusive = useStore(phone, (s) => !!(s.cfg.perms.screen && s.cfg.perms.manage));
+  const screenMode = useStore(phone, (s) => s.cfg.screen_mode);
   const autoRef = useRef(autoKb);
   const [typing, setTyping] = useState(false);
   const pcText = useStore(phone, (s) => s.pcText);
@@ -105,9 +110,9 @@ export default memo(function Touchpad() {
       if (c) { c.style.display = cx < 0 ? "none" : "block"; c.style.left = cx * 100 + "%"; c.style.top = cy * 100 + "%"; }
     };
     screenLink(true);
-    send({ t: "screen", mode: view, zoom: +zoom, video: view === "screen" && videoSupport.ok });
+    send({ t: "screen", mode: view, zoom: +zoom, video: view === "screen" && videoSupport.ok, exclusive: view === "screen" && exclusive && mayExclusive });
     return () => { screenView.onFrame = null; screenView.onVideo = null; send({ t: "screen", mode: null }); screenLink(false); if (url) URL.revokeObjectURL(url); };
-  }, [view, canView, zoom]);
+  }, [view, canView, zoom, exclusive, mayExclusive]);
 
   useEffect(() => {
     const el = pad.current!, d = dot.current!, st = strip.current!;
@@ -273,6 +278,10 @@ export default memo(function Touchpad() {
           <div className="field-row"><span className="muted">Pointer speed</span>
         <Range value={sens} min={0.4} max={3} step={0.1} onChange={(v) => { sensRef.current = v; setSens(v); store.set("pbs.sens", String(v)); }} />
         <b className="tnum">{sens.toFixed(1)}×</b></div>
+          {canView && mayExclusive && <div className="field-row" style={{ gridTemplateColumns: "1fr auto" }}>
+            <span className="muted"><b>Screen mode</b>: this phone only, best quality, sound timed to the picture. The other phones pause until you turn the screen off.</span>
+            <Switch checked={exclusive} onChange={(v) => { setExclusive(v); store.set("pbs.screenmode", v ? "1" : "0"); }} /></div>}
+          {screenMode === "owner" && <div className="note" style={{ margin: "4px 0" }}>Screen mode is on: the other phones are paused.</div>}
           <div className="field-row" style={{ gridTemplateColumns: "1fr auto" }}><span className="muted">Open the keyboard when I tap a text box on the PC</span>
             <Switch checked={autoKb} onChange={(v) => { setAutoKb(v); store.set("pbs.autokb", v ? "1" : "0"); }} /></div>
           <div className="field-row" style={{ gridTemplateColumns: "1fr auto" }}><span className="muted">Keyboard now</span>

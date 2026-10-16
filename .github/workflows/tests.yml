@@ -66,6 +66,11 @@ jobs:
           # GitHub's machines have no video chip: test the software encoders that every PC can fall back to
           PHONEBOXSOUND_VIDEO_ENCODERS: libopenh264,h264_mf
 
+      - name: Screen mode (one phone has the screen, the others pause and resume)
+        run: node scripts/screenmode.mjs
+        env:
+          PHONEBOXSOUND_VIDEO_ENCODERS: libopenh264,h264_mf
+
       - name: Results page
         if: always()
         run: node scripts/results.mjs bench

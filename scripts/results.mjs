@@ -23,7 +23,7 @@ try { unit = (fs.readFileSync(path.join(dir, "unit.txt"), "utf8").match(/(\d+) p
 
 const loadRows = (load?.rounds || []).map((r) => `<tr><td>${r.phones}</td><td>${r.connected}</td><td>${r.loss_pct_max ?? "–"} %</td><td>${r.jitter_p99_ms_worst ?? "–"} ms</td><td>${r.headroom_min_ms ?? "–"} ms</td><td>${r.clock_rtt_p50_ms ?? "–"} ms</td></tr>`).join("");
 const ok = (r) => r.on.late === 0 && r.on.unsynced === 0 && r.on.jumps === 0 && r.on.resyncs <= 1;
-const screenRows = screens.map((r) => `<tr><td>${r.mbps ? r.mbps + " Mbit/s" : "unlimited"}</td><td>${r.video ? "video" : r.busy ? "pictures, busy screen" : "pictures"}</td><td>${r.cpu}× slower</td>
+const screenRows = screens.map((r) => `<tr><td>${r.mbps ? r.mbps + " Mbit/s" : "unlimited"}</td><td>${r.on.mode === "video" ? "video" : r.busy ? "pictures, busy screen" : "pictures"}${r.video && r.on.mode !== "video" ? " (video asked; this machine fell back)" : ""}</td><td>${r.cpu}× slower</td>
   <td>${r.on.late}</td><td>${r.on.unsynced}</td><td>${Math.max(0, r.on.resyncs - 1)}</td><td>${esc(r.on.buffer)}</td><td>${esc(r.on.link)}</td><td>${r.on.fps}/s</td><td class="${ok(r) ? "pass" : "fail"}">${ok(r) ? "pass" : "fail"}</td></tr>`).join("");
 
 const html = `<!doctype html>
@@ -108,6 +108,15 @@ flowchart TB
   W["Phone sees a sound block arrive with little time to spare"] --> T["'strain' to the PC at once"]
   T --> P["Pictures pause, get lighter and slower"]
   P --> G
+</pre></div>
+
+<h3>Screen mode: one phone takes the screen</h3>
+<div class="card"><pre class="mermaid">
+flowchart LR
+  A["Phone A turns on Screen mode (needs Screen view + Manage speakers)"] --> O["A: the screen at the best quality, sound about 100 ms behind the picture"]
+  A --> H["Every other phone: paused, sent nothing, says who has the screen"]
+  A --> R["Another phone asking for the screen: turned away"]
+  O --> E["A turns the screen off"] --> P["Every phone plays again, back on the shared sync buffer"]
 </pre></div>
 
 <h3>Who gets in, and what they may do</h3>

@@ -44,7 +44,7 @@ export interface ServerState {
     vlc: Record<string, any>; mpv: Record<string, any>; mdns: boolean; https: boolean; strict: boolean; public_https: boolean; lockdown: boolean; approval: boolean; browser_delay: boolean; auto_quality: boolean; activity: boolean; auto_keyboard: boolean; screen_video: boolean;
   };
   capture: { status: string; error: string | null; device: string | null; sample_rate: number | null; devices: string[] };
-  devices: DeviceRow[]; pending: PendingRow[]; past: PastRow[]; autostart: boolean; terms_ok: boolean;
+  devices: DeviceRow[]; pending: PendingRow[]; past: PastRow[]; autostart: boolean; terms_ok: boolean; screen_mode: string | null;
   video: { available: boolean; encoder: string | null; installed: boolean; source: string | null; checked: boolean; installing: { done: number; total: number } | null; error: string | null; size_mb: number } | null; bedtime: Bedtime | null; pc_out: PcOut | null; spotify: SpotifyStatus; search: SearchStatus; browsers: BrowserLink[]; browser_hint: string[]; extension_urls: { chrome: string; firefox: string; edge: string }; blocked_ips: string[]; media: MediaState; talkers: { name: string; target: string }[]; targets: Target[];
   events: { t: number; kind: string; text: string }[];
   power: { action: string; by: string; seconds: number } | null;
@@ -57,6 +57,6 @@ export interface PhoneConfig {
   zone: string; theme: string; mode: string; duck: number; index: number; https_url: string | null; secure: boolean; screen?: [number, number];
   verified?: boolean; locked?: string[]; can_sign?: boolean; verify_code?: string | null; lockdown?: boolean;
   pending?: PendingRow[]; bedtime?: Bedtime | null; guest_until?: number;
-  record?: boolean; screen_key?: string | null; link?: string; link_weak_s?: number; on_hotspot?: boolean; auto_saver?: boolean;
+  record?: boolean; screen_mode?: "owner" | "held" | null; screen_mode_by?: string | null; screen_key?: string | null; link?: string; link_weak_s?: number; on_hotspot?: boolean; auto_saver?: boolean;
   file_token?: string | null; commands?: { id: string; name: string }[]; hosting?: string | null;
 }

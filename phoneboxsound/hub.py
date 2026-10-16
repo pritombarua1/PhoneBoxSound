@@ -84,6 +84,7 @@ class Client:
         self.screen_video = False    # this phone can play the screen as video (WebCodecs H.264)
         self.screen_acks = 0         # video frames the phone has shown
         self.screen_need_key = False # the phone's decoder lost track: start the video again from a full frame
+        self.screen_latency = 120    # this phone's sound buffer while it is in Screen mode (close behind the picture)
         self.screen_ms = None
         self.link_since = (None, time.time())        # (level, since when)
         self.auto_saver = False
@@ -250,6 +251,7 @@ class Hub:
         self.journal = None  # journal.Journal, set at start-up
         self.pcout = None    # pcout.PcOut, set at start-up
         self.video = None    # video.Video, set at start-up: screen view as video
+        self.screen_owner = None   # the phone in Screen mode: it alone views the screen and gets sound; the others pause
         self.textfocus = self.desktop if hasattr(self.desktop, "over") else None    # textfocus.TextFocus on a real PC (set at start-up)
         from .search import Search
         from .spotify import Spotify
@@ -311,7 +313,10 @@ class Hub:
         speaking = bool(self.talkers)
         return {
             "t": "config", "device_id": c.device_id, "name": dev["name"],
-            "latency_ms": self.cfg["latency_ms"], "streaming": self.cfg["streaming"],
+            "latency_ms": c.screen_latency if self.screen_mode_of(c) == "owner" else self.cfg["latency_ms"],
+            "streaming": self.cfg["streaming"] and self.screen_mode_of(c) != "held",
+            "screen_mode": self.screen_mode_of(c),
+            "screen_mode_by": self.clients[self.screen_owner].dev["name"] if self.screen_mode_of(c) == "held" else None,
             "gain": 0 if (dev["muted"] or zone["muted"]) else round(self.cfg["master"] * zone["volume"] * dev["volume"] * self.extras.fade, 4),
             "bedtime": self.extras.bedtime_state(), "guest_until": dev.get("guest_until") or 0,
             "screen_key": c.screen_key if c.perms.get("screen") else None,
@@ -438,7 +443,10 @@ class Hub:
         self.seq += 1
         packet = pack(KIND_PROGRAM, self.seq, ts, sr, stereo)
         saver = None
+        owner = self.screen_owner if self.screen_owner in self.clients else None
         for c in self.clients.values():
+            if owner and c.id != owner:
+                continue                      # paused for the phone in Screen mode: nothing is sent to it
             if c.dev["speaker"] and c.perms["speaker"]:
                 if c.dev.get("quality") == "saver" or c.auto_saver:
                     if saver is None:  # half the sample rate = half the data; built once, only if someone wants it
@@ -752,6 +760,31 @@ class Hub:
         finally:
             c.screen_mode = None
 
+    def set_screen_mode(self, c, on):
+        """Screen mode: one phone has the screen at the highest quality, with its sound timed to the picture;
+        every other phone pauses (gets no sound) so the whole link and the PC are for that phone."""
+        if on and not (c.perms.get("screen") and c.perms.get("manage")):
+            if on:
+                c.send_json({"t": "toast", "msg": "Screen mode needs the Manage speakers permission too (it pauses the other phones)."})
+            on = False
+        was = self.screen_owner
+        if on:
+            self.screen_owner = c.id
+        elif self.screen_owner == c.id:
+            self.screen_owner = None
+        if was != self.screen_owner:
+            if self.screen_owner:
+                self.event("screen", f"{c.dev['name']} started Screen mode: the other phones pause")
+            else:
+                self.event("screen", f"{c.dev['name']} ended Screen mode: every phone plays again")
+            self.push_config()
+
+    def screen_mode_of(self, c):
+        """None, "owner" or "held" (paused for the phone in Screen mode)."""
+        if not self.screen_owner or self.screen_owner not in self.clients:
+            return None
+        return "owner" if c.id == self.screen_owner else "held"
+
     def video_ok(self, c):
         return bool(self.video and self.video.encoder and self.cfg.get("screen_video", True)
                     and c.screen_video and c.screen_mode == "screen" and c.screen_ws is not None)
@@ -783,9 +816,14 @@ class Hub:
         from .video import cursor_on_screen
         kbps, width, seq, sent_count, fresh_starts = 1500, 1280, 0, 0, 0
         calm_since, rate = time.time(), 400_000.0
+        best = lambda: self.screen_owner == c.id          # Screen mode: the whole link is for this phone
+        max_fps = 60                                      # lowered for good when the phone cannot keep up
+        if best():
+            kbps, width, rate = 5000, 1920, 1_500_000.0
         while self.video_ok(c):
-            fps = 30 if kbps >= 2500 else 24 if kbps >= 900 else 15
-            stream = self.video.start(width if kbps >= 700 else 960, fps, kbps)
+            fps = min(max_fps, 60 if (best() and kbps >= 6000) else 30 if kbps >= 2500 else 24 if kbps >= 900 else 15)
+            w = (1920 if best() and kbps >= 3000 else 1280) if kbps >= 700 else 960
+            stream = self.video.start(w, fps, kbps)
             if stream is None:
                 return False
             c.screen_need_key, base = False, c.screen_acks
@@ -806,7 +844,7 @@ class Hub:
                     if c.screen_need_key:
                         restart = "key"
                         break
-                    if sent_here - (c.screen_acks - base) > 4:
+                    if sent_here - (c.screen_acks - base) > max(4, fps // 6):
                         restart = "behind"            # the phone fell behind: skip ahead from a full frame
                         break
                     cx, cy = (self.desktop.cursor if self.desktop.demo else cursor_on_screen())
@@ -824,29 +862,45 @@ class Hub:
                     if self.journal:
                         self.journal.count(c.device_id, "screen_out", len(f.data))
                     c.screen_ms = round(1000 / fps)
-                    if time.time() - calm_since > 15 and kbps < 6000 and time.time() - c.screen_strain > 15:
+                    if time.time() - calm_since > 15 and kbps < (16000 if best() else 6000) and time.time() - c.screen_strain > 15:
                         restart = "calm"
             except Exception as e:
                 log.info("screen video ended: %s", e)
                 return False
             finally:
                 stream.stop()
+            if restart:
+                log.info("screen video for %s: restart (%s) at %d kbps after %d frames", c.dev["name"], restart, kbps, sent_here)
             if restart == "key":
                 fresh_starts = fresh_starts + 1 if c.screen_acks == base else 0
                 if fresh_starts >= 3:
                     log.info("screen video: the phone shows nothing, switching it to pictures")
                     return False
-            if restart == "strain":
+            if restart == "behind":
+                # the phone cannot draw this many frames: fewer and lighter from now on, never the same again
+                max_fps = max(15, min(max_fps, fps) * 2 // 3) if fps > 15 else 15
+                kbps, calm_since = max(300, int(kbps * 0.8)), time.time()
+            if restart == "strain" and sent_here == 0 and best():
+                # straining with no video going out: the video is not the cause, the buffer is too short for
+                # this phone's link. Give its sound more room instead of starving the picture.
+                c.screen_latency = min(300, c.screen_latency + 30)
+                c.screen_strain = 0.0
+                self.push_config([c])
+                await asyncio.sleep(0.5)
+            elif restart == "strain":
                 kbps, rate = max(300, int(kbps * 0.6)), max(100_000.0, rate * 0.6)
                 calm_since = time.time()
                 await asyncio.sleep(1.0)              # the whole link for the sound for a moment
             elif restart == "calm":
-                kbps, rate = min(6000, int(kbps * 1.3)), min(1_500_000.0, rate * 1.3)
+                kbps = min(16000 if best() else 6000, int(kbps * 1.3))
+                rate = min(4_000_000.0 if best() else 1_500_000.0, rate * 1.3)
                 calm_since = time.time()
         return True
 
     def set_screen(self, c, mode, zoom=None):
         c.screen_mode = mode if mode in ("screen", "window", "zoom") else None
+        if not c.screen_mode and self.screen_owner == c.id:
+            self.set_screen_mode(c, False)
         if zoom:
             c.screen_zoom = clamp(float(zoom), 1.5, 10)
         if c.screen_mode and (c.screen_task is None or c.screen_task.done()):
@@ -1150,6 +1204,10 @@ class Hub:
         return c, None
 
     async def leave(self, c):
+        if self.screen_owner == c.id:
+            self.screen_owner = None
+            self.event("screen", f"{c.dev['name']} left: Screen mode ended, every phone plays again")
+            asyncio.get_running_loop().call_soon(self.push_config)
         if self.clients.get(c.id) is c:
             self.clients.pop(c.id, None)
             c.dev["last_seen"] = time.time()
@@ -1236,7 +1294,13 @@ class Hub:
             self.clip_seq = self.desktop.clipboard_seq()
         elif t == "screen" and (c.perms.get("screen") or not m.get("mode")):
             c.screen_video = bool(m.get("video"))
-            self.set_screen(c, m.get("mode"), m.get("zoom"))
+            owner = self.clients.get(self.screen_owner) if self.screen_owner else None
+            if m.get("mode") and owner and owner is not c:
+                c.send_json({"t": "toast", "msg": f"{owner.dev['name']} is using Screen mode: the screen is for that phone only until it ends."})
+                c.outcome = "refused: another phone is in Screen mode"
+            else:
+                self.set_screen(c, m.get("mode"), m.get("zoom"))
+                self.set_screen_mode(c, bool(m.get("mode") == "screen" and m.get("exclusive")))
         elif t in ("input", "clip_get", "clip_set", "clip_live", "screen") or (t == "media" and not c.perms["remote"]):
             self.denied(c, {"input": "keyboard & mouse", "screen": "screen view", "media": "the media remote"}.get(t, "the clipboard"))
         elif t == "intercom_start" and c.perms["intercom"]:
@@ -1388,6 +1452,7 @@ class Hub:
             "cfg": cfg, "api_token": self.cfg["api_token"],
             "terms_ok": self.terms_ok(),
             "video": self.video.status() if self.video else None,
+            "screen_mode": self.clients[self.screen_owner].dev["name"] if self.screen_owner in self.clients else None,
             "capture": {"status": self.capture.status, "error": self.capture.error, "device": self.capture.active_device,
                         "sample_rate": self.sample_rate, "devices": self.capture.devices},
             "devices": self.device_rows(), "pending": self.pending_rows(), "past": self.past_rows(), "media": self.media.public(),
@@ -2267,6 +2332,17 @@ class Hub:
 
     async def auto_latency_tick(self):
         cfg = self.cfg
+        owner = self.clients.get(self.screen_owner) if self.screen_owner else None
+        if owner:
+            # Screen mode: only the owner plays. Its sound sits just behind the picture: as short a buffer as
+            # its link allows (its own need plus a margin), and the shared buffer is left alone for later.
+            need = owner.stats.get("need_ms")
+            if isinstance(need, (int, float)) and owner.stats.get("played", 0) > 100 and 0 < need < 2000:
+                want = int(clamp(need + 30, 70, 300)) // 10 * 10
+                if abs(want - owner.screen_latency) >= 20 or want > owner.screen_latency:
+                    owner.screen_latency = want
+                    self.push_config([owner])
+            return
         if not cfg["auto_latency"]:
             return
         # Ignore phones whose measurement can't be trusted right now (clock being re-measured, page in

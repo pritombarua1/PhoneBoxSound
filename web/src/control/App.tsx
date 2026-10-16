@@ -90,6 +90,7 @@ export default function App() {
             <span className="pill hide-sm" title="Current sync buffer">Buffer <b>{c!.latency_ms} ms{c!.auto_latency ? " auto" : ""}</b></span>
             <button className="iconbtn" title="Toggle light/dark" onClick={() => { const next = dark ? "light" : "dark"; applyTheme(null, next); setGlobal({ mode: next }); }}>
               <Icon name={dark ? "sun" : "moon"} /></button>
+            {S!.screen_mode && <span className="pill" title="One phone has the screen; the others are paused until it ends"><Icon name="tv" />Screen mode · {S!.screen_mode}</span>}
             {S!.bedtime && <span className="pill" title="Bedtime timer running (Presets)"><Icon name="moon" />fading · {Math.ceil(S!.bedtime.left_s / 60)} min</span>}
             <button className={cx("btn", c!.lockdown ? "danger" : "ghost")} title="Lockdown: phones keep playing, but none can control this PC and no new phone can join"
               onClick={() => setGlobal({ lockdown: !c!.lockdown })}><Icon name="shield" /><span className="hide-sm">{c!.lockdown ? "Locked down" : "Lockdown"}</span></button>

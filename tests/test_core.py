@@ -1228,3 +1228,30 @@ def test_screen_video_only_when_everything_allows_it(tmp_path):
     c.screen_video = True
     hub.cfg["screen_video"] = False
     assert not hub.video_ok(c)          # switched off in Settings
+
+
+def test_screen_mode_pauses_the_others_and_needs_permission(tmp_path):
+    hub = make_hub(tmp_path)
+    sent = []
+
+    class C:
+        def __init__(self, cid, perms):
+            self.id, self.device_id = cid, cid
+            self.perms = perms
+            self.dev = {"name": cid, "speaker": True, "perms": perms}
+            self.screen_latency = 120
+
+        def send_json(self, m, **k):
+            sent.append((self.id, m))
+
+    a = C("A", {"screen": True, "manage": True, "speaker": True})
+    b = C("B", {"screen": True, "manage": False, "speaker": True})
+    hub.clients = {"A": a, "B": b}
+    hub.push_config = lambda *x, **k: None
+    hub.set_screen_mode(b, True)
+    assert hub.screen_owner is None                       # without Manage speakers: no Screen mode
+    assert any("Manage speakers" in m.get("msg", "") for _, m in sent)
+    hub.set_screen_mode(a, True)
+    assert hub.screen_mode_of(a) == "owner" and hub.screen_mode_of(b) == "held"
+    hub.set_screen_mode(a, False)
+    assert hub.screen_owner is None and hub.screen_mode_of(b) is None

@@ -43,6 +43,32 @@ ENCODERS = (
 )
 
 
+def video_chips():
+    """The PC's graphics chips, strongest first: [(name, vendor, dedicated)]. Asked once from Windows."""
+    if sys.platform != "win32":
+        return []
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                              "Get-CimInstance Win32_VideoController | ForEach-Object { $_.Name + '|' + $_.AdapterCompatibility }"],
+                             capture_output=True, text=True, timeout=15, creationflags=NO_WINDOW).stdout
+    except Exception:
+        return []
+    import re
+    chips = []
+    for line in out.splitlines():
+        name, _, maker = line.strip().partition("|")
+        low = (name + " " + maker).lower()
+        vendor = "nvidia" if "nvidia" in low else "amd" if ("amd" in low or "radeon" in low or "advanced micro" in low) else "intel" if "intel" in low else None
+        if not vendor:
+            continue                         # virtual adapters (remote desktop, Parsec…) cannot encode
+        dedicated = vendor == "nvidia" or bool(re.search(r"\b(rx\s?\d|radeon pro|radeon vii|firepro|arc\b|arc a|arc b)", low))
+        chips.append((name.strip(), vendor, dedicated))
+    return sorted(chips, key=lambda c: not c[2])     # dedicated cards before the ones built into the processor
+
+
+VENDOR_ENCODER = {"nvidia": "h264_nvenc", "amd": "h264_amf", "intel": "h264_qsv"}
+
+
 class Frame:
     __slots__ = ("data", "key", "t")
 
@@ -125,6 +151,7 @@ class Video:
         self.dir = os.path.join(data_dir, "tools", "ffmpeg")
         self.demo = demo
         self.encoder = None            # (codec, label, args) that worked on this PC
+        self.chips = []
         self.checked = False
         self.installing = None         # {"done": bytes, "total": bytes} while downloading
         self.error = None
@@ -171,12 +198,18 @@ class Video:
             self.encoder, self.error = None, None
             path, _ = self.ffmpeg()
             only = os.environ.get("PHONEBOXSOUND_VIDEO_ENCODERS")     # tests: "none", or e.g. "h264_mf,libopenh264"
-            candidates = [e for e in ENCODERS if only is None or e[0] in only.split(",")]
+            # the strongest chip's encoder first (a dedicated card before the one built into the processor)
+            chips = [] if self.demo else await asyncio.to_thread(video_chips)
+            self.chips = chips
+            order = [VENDOR_ENCODER[v] for _, v, _ in chips]
+            ranked = sorted(ENCODERS, key=lambda e: order.index(e[0]) if e[0] in order else len(order) + ENCODERS.index(e))
+            candidates = [e for e in ranked if only is None or e[0] in only.split(",")]
             if path:
                 for enc in candidates:
                     ok = await asyncio.to_thread(self._try, enc)
                     if ok:
-                        self.encoder = enc
+                        chip = next((n for n, v, _ in chips if VENDOR_ENCODER.get(v) == enc[0]), None)
+                        self.encoder = (enc[0], chip or enc[1], enc[2])
                         log.info("screen video: %s (%s)", enc[1], enc[0])
                         break
                 if not self.encoder:

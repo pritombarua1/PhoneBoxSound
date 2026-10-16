@@ -37,6 +37,7 @@ export default function Speaker({ go }: { go: (t: string) => void }) {
   const closer = cfg.on_hotspot ? "Move closer to the PC (this phone is on the PC's own hotspot)" : "Move closer to your Wi-Fi router, or away from walls and microwaves between you and it";
   let status: React.ReactNode, warn = false;
   if (!cfg.speaker) status = <><b>Remote mode</b> · no audio on this phone</>;
+  else if (cfg.screen_mode === "held") { status = <><b>Paused</b>: {cfg.screen_mode_by || "another phone"} is using Screen mode. The sound comes back when it ends.</>; warn = true; }
   else if (!cfg.streaming) { status = <><b>Paused</b> from the PC</>; warn = true; }
   else if (!synced) { status = "Syncing clock…"; warn = true; }
   else if (stats?.waiting) { status = <b>Waiting for audio…</b>; warn = true; }

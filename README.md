@@ -464,6 +464,13 @@ you listen on. Bluetooth and USB headsets add their own delay; the fine offset c
   screen costs almost nothing. It needs a free helper, FFmpeg, offered as a one-time download in Settings →
   Screen view (80 MB, LGPL, run as a separate program). Without it, or on phones too old for video, the
   screen is sent as pictures.
+- **Screen mode** (Pad options, for a phone with Screen view and Manage speakers): that phone alone has the
+  screen, at the highest quality the link allows (full HD, up to 60 frames a second, the strongest video chip),
+  with its own sound placed just behind the picture (about 100 ms instead of the shared sync buffer). Every
+  other phone pauses and is sent nothing, and says why; no other phone can open the screen meanwhile.
+  Turning the screen off ends it, and every phone plays again.
+- The encoder of the strongest video chip is used first: a dedicated card before the one built into the
+  processor (the dashboard names the chip in Settings → Screen view).
 - Either way the screen travels on its own connection, in small paced slices that use at most what the
   sound leaves free. When sound starts arriving with little time to spare, the phone says so and the screen
   pauses and gets lighter at once (video restarts at a lower bitrate); it sharpens again while the sound

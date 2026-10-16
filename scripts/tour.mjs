@@ -61,7 +61,7 @@ export const SLIDES = [
   ["Control the PC", "phone-keys", "Keys and shortcuts",
     "Ctrl, Shift, Alt, Win, arrows, function keys, ready-made shortcuts and your own. In the type box, Enter starts a new line; Send (or Shift+Enter) types the whole text on the PC."],
   ["Control the PC", "phone-screen", "See the PC's screen",
-    "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound. With the free video helper it plays as smooth video, up to 30 frames a second."],
+    "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound. With the free video helper it plays as smooth video, up to 30 frames a second. Screen mode (Pad options) gives this phone the screen alone, at the best quality, with its sound just behind the picture; the other phones pause until it ends."],
   ["Control the PC", "phone-magnifier", "Magnifier",
     "A zoomed view that follows the pointer, for small buttons and text."],
   ["Control the PC", "phone-clipboard", "Clipboard",

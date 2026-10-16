@@ -190,7 +190,7 @@
  },
  {
   "title": "See the PC's screen",
-  "text": "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound. With the free video helper it plays as smooth video, up to 30 frames a second.",
+  "text": "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound. With the free video helper it plays as smooth video, up to 30 frames a second. Screen mode (Pad options) gives this phone the screen alone, at the best quality, with its sound just behind the picture; the other phones pause until it ends.",
   "steps": [
    "Switch \"Screen view\" on for the phone",
    "On the phone, open Pad options",

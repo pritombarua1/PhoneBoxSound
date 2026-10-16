@@ -165,6 +165,7 @@ let nextTime = 0, rate = 1, lastSeq = 0, lastAudioAt = 0;
 export const meter = { level: 0 };   // read by the orb animation each frame
 const stats = { late: 0, resyncs: 0, played: 0, gaps: 0, far: 0, unsynced: 0, lateWindow: [] as number[] };
 let lastStrain = 0;
+(window as any).__pbsLatency = () => cfg().latency_ms;     // for the tests
 (window as any).__pbsAudio = { stats, clock: () => ({ synced: clock.synced, jumps: (clock as any).jumps ?? 0, rtt: (clock as any).rtt ?? 0 }) };   // for the tests
 const slack = new Float32Array(1000); let slackN = 0;
 const transit = new Float32Array(500); let transitN = 0;
@@ -187,7 +188,9 @@ function onProgram(p: Packet) {
     return;
   }
   slack[slackN++ % slack.length] = (target - now) * 1000;
-  if (screenSock && (target - now) * 1000 < Math.max(40, k.latency_ms * 0.45)) {
+  // In Screen mode the buffer is short on purpose (sound just behind the picture), so only real danger counts.
+  const strainAt = k.screen_mode === "owner" ? Math.max(20, k.latency_ms * 0.2) : Math.max(40, k.latency_ms * 0.45);
+  if (screenSock && (target - now) * 1000 < strainAt) {
     const t = performance.now();
     if (t - lastStrain > 300) { lastStrain = t; send({ t: "strain" }); }     // pictures make way at once
   }
