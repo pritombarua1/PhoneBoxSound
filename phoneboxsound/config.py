@@ -42,6 +42,7 @@ DEFAULTS = {
     "pc_out": {"enabled": False, "device": None, "offset_ms": 0, "volume": 1.0},   # the PC's own output, delayed to match the phones
     "activity": True,         # keep the two-day record of what each phone does
     "terms_accepted": "",     # the version of DISCLAIMER.md accepted on the first start ("" = not yet)
+    "screen_video": True,     # screen view as a video stream (smooth, light) when the PC can encode it
     "auto_keyboard": True,    # tell a phone when the PC's pointer is on a text box, so its keyboard can open by itself
     "auto_quality": True,     # a phone whose connection turns poor gets the lighter stream until it recovers
     "browser_delay": True,    # with the browser extension: show the picture later, to match the phones

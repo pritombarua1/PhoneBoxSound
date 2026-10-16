@@ -3,11 +3,11 @@
 **Your PC sound. Everywhere.** Turn the phones you already own into synchronised wireless speakers,
 a media remote and an intercom for your Windows PC. Phones just open a web page: nothing to install.
 
-No cloud · no account · no app install · local network only · GPL-3.0 · by Pritom Barua
+No cloud · no account · no app install · local network only · free for non-commercial use · by Pritom Barua
 
 [![Tests](https://github.com/pritombarua1/PhoneBoxSound/actions/workflows/tests.yml/badge.svg)](https://github.com/pritombarua1/PhoneBoxSound/actions/workflows/tests.yml)
 [![Release](https://img.shields.io/github/v/release/pritombarua1/PhoneBoxSound)](https://github.com/pritombarua1/PhoneBoxSound/releases/latest)
-[![Licence: GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue)](NOTICE.md)
+[![Licence: PolyForm Noncommercial](https://img.shields.io/badge/licence-PolyForm%20Noncommercial-blue)](NOTICE.md)
 
 ![Dashboard](docs/screens/dashboard.png)
 
@@ -17,6 +17,10 @@ No cloud · no account · no app install · local network only · GPL-3.0 · by 
   <img src="docs/screens/phone-touchpad.png" width="24%" alt="Touchpad">
   <img src="docs/screens/phone-more.png" width="24%" alt="Invite">
 </p>
+
+**Website:** [https://pritombarua1.github.io/PhoneBoxSound/](https://pritombarua1.github.io/PhoneBoxSound/): the guide, the [guided tour](https://pritombarua1.github.io/PhoneBoxSound/tour.html) you can step
+through, and **[how it works and how it measures up](https://pritombarua1.github.io/PhoneBoxSound/results.html)**: diagrams, the results of the
+automatic tests on the current version, and how to run the same checks yourself.
 
 ## Videos
 
@@ -86,7 +90,7 @@ one from its **More** tab.
 | `npm run package` | Standalone Windows build: `release/PhoneBoxSound-win64.zip` (needs `pip install -r requirements-dev.txt`) |
 | `npm run docs` | Regenerate screenshots, videos and the PDF. Also the end-to-end test (150+ checks with real multi-touch on the touchpad) |
 | `python scripts/loadtest.py` | Load test: 1, 10, 30 and 50 simulated phones; loss, jitter and time to spare per phone |
-| `node scripts/screencheck.mjs` | Checks that screen view never disturbs the sound (`--busy`, `--mbps 4`, `--cpu 2` for harsher conditions) |
+| `node scripts/screencheck.mjs` | Checks that screen view never disturbs the sound (`--video` for the video stream, `--busy`, `--mbps 4`, `--cpu 2` for harsher conditions) |
 | `npm run docs:videos` | Re-record the guided tour and the extension video from the current screenshots |
 
 Server options: `python -m phoneboxsound --help` (`--port`, `--no-https`, `--no-tray`, `--demo`, `--test`, `--config`…).
@@ -111,7 +115,11 @@ Environment: `PHONEBOXSOUND_PORT`, `PHONEBOXSOUND_HTTPS_PORT`, `PHONEBOXSOUND_BU
   test and the screen-view check run on GitHub's Windows machines for every change; releases are built
   there from source with exact, checksummed dependencies.
 
-### Measured
+### Measured (snapshot)
+
+The latest numbers, with diagrams of the sync, the screen view and the security model, are on the
+[results page](https://pritombarua1.github.io/PhoneBoxSound/results.html), rebuilt by GitHub's machines after every change. At the time of writing:
+
 
 **Many phones** (`python scripts/loadtest.py`: simulated phones on the same PC, 20 s each):
 
@@ -132,6 +140,18 @@ second):
 | 6 Mbit/s | 0 | 0 | unchanged | 5.5 |
 | 20 Mbit/s | 0 | 0 | unchanged | 5.6 |
 | 50 Mbit/s (simple screen) | 0 | 0 | unchanged | 8.3 |
+
+As **video** (with the helper), same phone and links:
+
+| Link | Sound late | Playback jumps | Sync buffer | Frames per second |
+|---|---|---|---|---|
+| 3 Mbit/s (weak) | 0 | 0 | unchanged | 14.5 |
+| 4 Mbit/s | 0 | 0 | unchanged | 22.9 |
+| 6 Mbit/s | 0 | 0 | unchanged | 24.7 |
+| 20 Mbit/s | 0 | 0 | unchanged | 24.6 |
+
+On this PC's real 4K screen with real music playing (`npm run check:real`): about 22 frames a second,
+0 late sound blocks.
 
 These run on one PC, so they measure PhoneBoxSound itself; a real home network adds its own delays, which
 the sync buffer is there to absorb.
@@ -438,24 +458,18 @@ you listen on. Bluetooth and USB headsets add their own delay; the fine offset c
   the PC *is* the centre, and the notice says so.
 - A phone whose link stays poor is moved to the lighter stream (half the data) and back by itself.
 - The Devices page shows each phone's share and the total Wi-Fi load (1.5 Mbit/s per phone at full quality).
-- The PC-screen view travels on its own connection, one picture at a time, sent in small paced slices
-  that use at most what the sound leaves free. When sound starts arriving with little time to spare, the
-  phone says so and pictures pause and get lighter at once; they get sharper again while the sound stays
-  calm. A phone showing the screen never makes the PC raise everyone's sync buffer, and its connection is
-  judged by late sound only, so pictures never trigger "come closer" or the lighter stream.
-- **Bedtime** (Presets, or the All speakers panel on a phone): every phone fades to silence over 15 to 90
-  minutes, then the player pauses, and optionally the PC locks, sleeps or shuts down.
-  `POST /api/bedtime {"minutes":30,"after":"shutdown"}`.
-- **Announce and doorbell** (Intercom page): a chime and words spoken by Windows' own voice, sent to the
-  phones like an intercom call, so the music dips and returns. For a doorbell or home automation:
-  `POST /api/announce {"sound":"doorbell","text":"Someone is at the door"}` (sounds: `ding`, `doorbell`, `alert`).
-- **Guest pass** (Dashboard): a QR that lets a visitor's phone be a speaker for two hours without approval.
-  A guest is a speaker and nothing else, whatever is switched on later, and is removed when the time is up.
-- **Shake to lock down:** a phone with the *Shake to lock down* permission switches it on under More →
-  Security; three hard shakes put the PC in lockdown. Only while the page is open on the phone.
-- **Security digest** (Activity → Security digest): 30 days of new phones, approvals, denials, refused
-  attempts, failed identity checks, wrong passwords, system changes and lockdowns, with where things stand.
-- **Browser tabs:** see [extension/README.md](extension/README.md).
+- **Screen view as video**, the way remote-desktop programs (Parsec, AnyDesk) do it: the screen is captured
+  straight from the graphics card, encoded as H.264 by the PC's own video chip (NVIDIA, AMD or Intel; else
+  Windows' encoder or OpenH264) and decoded by the phone's hardware, up to 30 frames a second. A still
+  screen costs almost nothing. It needs a free helper, FFmpeg, offered as a one-time download in Settings →
+  Screen view (80 MB, LGPL, run as a separate program). Without it, or on phones too old for video, the
+  screen is sent as pictures.
+- Either way the screen travels on its own connection, in small paced slices that use at most what the
+  sound leaves free. When sound starts arriving with little time to spare, the phone says so and the screen
+  pauses and gets lighter at once (video restarts at a lower bitrate); it sharpens again while the sound
+  stays calm. A phone showing the screen never makes the PC raise everyone's sync buffer, and its
+  connection is judged by late sound only, so the screen never triggers "come closer" or the lighter
+  stream.
 
 ## Password and storage
 
@@ -555,13 +569,18 @@ also lists everything `start.bat` may download and whose terms apply.
 
 ## Licence
 
-Copyright (C) 2026 Pritom Barua. Free software under the **GNU General Public License v3 or later**
-([LICENSE](LICENSE)), with the additional terms in [NOTICE.md](NOTICE.md):
+Copyright (C) 2026 Pritom Barua. Source available under the **PolyForm Noncommercial License 1.0.0**
+([LICENSE](LICENSE); plain-words summary in [NOTICE.md](NOTICE.md)):
 
-- You may use, study, change and share it, also commercially.
-- If you share it or a changed version, keep the notice *"Based on PhoneBoxSound by Pritom Barua"* with
-  a link here, publish your full source under the same licence, and use a different name and logo.
-  It may not be turned into a closed-source product.
+- **Free** to use, study, change and share for **non-commercial** purposes: at home, for yourself, family
+  and friends, and in schools, charities, public research and government organisations.
+- **Commercial use needs a licence from the author**: selling it or anything containing its code, using it
+  in a business or paid service, or including it in a product. See
+  [NOTICE.md → Commercial licence](NOTICE.md#commercial-licence).
+- Every copy, and every piece of the code, must keep the author's name and these terms. A changed version
+  that is shared must use another name and logo and say it is based on PhoneBoxSound by Pritom Barua.
+
+Versions up to 3.2.0 were published under the GNU GPL v3; copies of those stay under it.
 
 **Releases** are built, tested and published automatically from this source code by GitHub Actions.
 Privacy: [PRIVACY.md](PRIVACY.md) (nothing is collected).

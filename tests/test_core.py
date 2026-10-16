@@ -1196,3 +1196,35 @@ def test_a_phone_showing_the_screen_does_not_raise_everyones_buffer(tmp_path):
     hub.clients["b"].screen_mode = None
     asyncio.run(hub.auto_latency_tick())
     assert hub.cfg["latency_ms"] == min(625, hub.cfg["max_latency_ms"])   # without the screen, a phone that needs more gets it (up to the ceiling)
+
+
+def test_video_frames_are_told_apart():
+    """The encoder's output is split into frames at each delimiter; a full frame is one with an IDR slice."""
+    from phoneboxsound.video import _nal_types
+    key = b"\x00\x00\x00\x01\x09\xf0" + b"\x00\x00\x00\x01\x67\x42\xe0\x1f" + b"\x00\x00\x00\x01\x68\xce" + b"\x00\x00\x01\x65\x88\x84"
+    delta = b"\x00\x00\x00\x01\x09\xf0" + b"\x00\x00\x01\x41\x9a\x02"
+    assert 5 in _nal_types(key) and 7 in _nal_types(key)
+    assert 5 not in _nal_types(delta) and 1 in _nal_types(delta)
+
+
+def test_screen_video_only_when_everything_allows_it(tmp_path):
+    hub = make_hub(tmp_path)
+
+    class V:
+        encoder = ("h264_nvenc", "NVIDIA", [])
+
+    class C:
+        screen_video, screen_mode, screen_ws = True, "screen", object()
+
+    c = C()
+    assert not hub.video_ok(c)          # no helper on this PC: pictures
+    hub.video = V()
+    assert hub.video_ok(c)
+    c.screen_mode = "window"
+    assert not hub.video_ok(c)          # a single window and the magnifier stay pictures
+    c.screen_mode = "screen"
+    c.screen_video = False
+    assert not hub.video_ok(c)          # a phone that cannot decode video gets pictures
+    c.screen_video = True
+    hub.cfg["screen_video"] = False
+    assert not hub.video_ok(c)          # switched off in Settings

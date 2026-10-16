@@ -1,10 +1,10 @@
 {
   "name": "phoneboxsound",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "Turn phones into synchronised wireless speakers, a media remote and an intercom for your Windows PC.",
   "private": true,
   "type": "module",
-  "license": "GPL-3.0-or-later",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Pritom Barua (https://github.com/pritombarua1)",
   "scripts": {
     "dev": "node scripts/dev.mjs",

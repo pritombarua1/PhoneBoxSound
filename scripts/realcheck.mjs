@@ -98,7 +98,7 @@ try {
   out(`real search for "${words}" returns results with pictures`, res.rows.length >= 6 && res.rows.slice(0, 4).every((r) => r.pic),        // pictures further down load as you scroll to them
     `suggestions after ${hintAt} ms, results after ${rowsAt} ms: YouTube ${by("YouTube")}, Apple Music ${by("Apple Music")}, Spotify ${by("Spotify")}; first: "${res.rows[0]?.t}" (${res.rows[0]?.s})`);
   if (res.notes.length) console.log("       note shown:", res.notes.join(" | "));
-  await desk.screenshot({ path: path.join(root, "docs", "screens", "real-search.png") });
+  await desk.screenshot({ path: path.join(os.tmpdir(), "phoneboxsound-real-search.png") });   // your own PC: never into docs/
   await desk.click(".srch-clear"); await sleep(300);
   out("the search clears with its button", await desk.evaluate(() => document.querySelectorAll(".srch-row").length === 0 && document.querySelector(".srch input").value === ""));
 
@@ -119,7 +119,7 @@ try {
   const view = await phone.evaluate(() => ({ spotify: !!document.querySelector(".sp"), title: (document.querySelector(".sp-head b") || document.querySelector(".np-card .title"))?.textContent,
     fits: !document.querySelector(".sp-ctl") || document.querySelector(".sp-ctl").getBoundingClientRect().bottom <= document.querySelector("nav.nav").getBoundingClientRect().top }));
   out("the phone's player screen shows what is playing and fits the screen", !!view.title && view.fits, `${view.spotify ? "Spotify layout" : "standard layout"}: "${view.title}"`);
-  await phone.screenshot({ path: path.join(root, "docs", "screens", "real-phone.png") });
+  await phone.screenshot({ path: path.join(os.tmpdir(), "phoneboxsound-real-phone.png") });
   const opener = await phone.$(".srch-open") ? ".srch-open" : '.sp-bar button[title="Search"]';
   await phone.click(opener); await sleep(400);
   await phone.type(".searchpage.on .srch input", words);
@@ -128,6 +128,18 @@ try {
   const prow = await phone.evaluate(() => document.querySelectorAll(".srch-row").length);
   await phone.click(".searchpage.on .srch-back"); await sleep(500);
   out("search on the phone shows results, and its page closes with the back button", prow >= 6 && await phone.evaluate(() => !document.querySelector(".searchpage.on")), `${prow} results`);
+
+  // ---- this PC's real screen as video on the phone, while the real sound keeps playing
+  await api(`/api/devices/${dev.device_id}`, { perms: { search: true, screen: true, input: true } }); await sleep(800);
+  await phone.evaluate(() => [...document.querySelectorAll(".seg button")].find((b) => b.textContent === "Touchpad")?.click()); await sleep(600);
+  const vBefore = await phone.evaluate(() => ({ late: window.__pbsAudio.stats.late, played: window.__pbsAudio.stats.played }));
+  await phone.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent === "Screen")?.click());
+  await sleep(8000);
+  const vAfter = await phone.evaluate(() => ({ late: window.__pbsAudio.stats.late, played: window.__pbsAudio.stats.played, video: window.__pbsVideoFrames || 0, canvas: document.querySelector(".screenvideo")?.width || 0 }));
+  out("this PC's real screen plays on the phone as video, and the sound is not disturbed",
+    vAfter.video > 60 && vAfter.late === vBefore.late && vAfter.played - vBefore.played > 600,
+    `${vAfter.video} video frames in 8 s (${vAfter.canvas} px wide), ${vAfter.late - vBefore.late} late sound blocks`);
+  await phone.evaluate(() => [...document.querySelectorAll("button")].find((b) => b.textContent === "Off")?.click());
   out("no script errors on either page", errors.length === 0, errors.slice(0, 3).join(" | "));
 } catch (e) {
   out("the check itself ran through", false, e.message);

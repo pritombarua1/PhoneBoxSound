@@ -2,6 +2,7 @@
 //
 //   node scripts/screencheck.mjs                    # slow phone (CPU 4x slower) on a busy 10 Mbit/s link
 //   node scripts/screencheck.mjs --cpu 6 --mbps 5   # harsher
+//   node scripts/screencheck.mjs --json out.json    # also write the numbers to a file
 //
 // Starts PhoneBoxSound in demo mode, joins one phone in headless Chrome, plays for a while with screen
 // view off, then the same with screen view on, and compares what the phone's sound engine counted:
@@ -28,7 +29,7 @@ const chrome = [process.env.CHROME_PATH, "C:/Program Files/Google/Chrome/Applica
 const port = await freePort();
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pbs-screen-"));
 const server = spawn("python", ["-m", "phoneboxsound", "--demo", "--port", String(port), "--https-port", String(await freePort()), "--no-mdns", "--no-tray", "--no-browser",
-  "--config", path.join(tmp, "config.json")], { cwd: root, env: { ...process.env, PHONEBOXSOUND_SEAL: "file", ...(process.argv.includes("--busy") ? { PHONEBOXSOUND_DEMO_BUSY_SCREEN: "1" } : {}) }, stdio: "ignore" });
+  "--config", path.join(tmp, "config.json")], { cwd: root, env: { ...process.env, PHONEBOXSOUND_SEAL: "file", ...(process.argv.includes("--busy") ? { PHONEBOXSOUND_DEMO_BUSY_SCREEN: "1" } : {}), ...(process.argv.includes("--video") ? { PHONEBOXSOUND_DEMO_VIDEO: "1" } : {}) }, stdio: "ignore" });
 const URL_ = `http://127.0.0.1:${port}`;
 const api = (p, body) => fetch(URL_ + p, { method: body ? "POST" : "GET", headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json());
 
@@ -86,9 +87,9 @@ try {
     await page.evaluate(() => document.querySelector("nav.nav button:nth-child(2)").click()); await sleep(400);
     await page.evaluate(() => [...document.querySelectorAll(".seg button")].find((b) => b.textContent === "Touchpad")?.click());
     await page.waitForFunction(() => window.__pbsAudio?.stats.played > 30, { timeout: 20000 });   // counted from the first second
-    const read = () => page.evaluate(() => { const a = window.__pbsAudio; const im = document.querySelector(".screenbox img"); return { ...a.stats, lateWindow: undefined, ...a.clock(), frames: window.__frames || 0, img: im?.naturalWidth || 0 }; });
+    const read = () => page.evaluate(() => { const a = window.__pbsAudio; const im = document.querySelector(".screenbox img"); return { ...a.stats, lateWindow: undefined, ...a.clock(), frames: (window.__frames || 0) + (window.__pbsVideoFrames || 0), img: im?.naturalWidth || 0 }; });
     await page.evaluate(() => {          // count every new picture shown, whenever the picture area appears
-      window.__frames = 0; let src = "";
+      window.__frames = 0; window.__pbsVideoFrames = 0; let src = "";
       setInterval(() => { const im = document.querySelector(".screenbox img"); if (im && im.src && im.src !== src && im.complete) { src = im.src; window.__frames++; } }, 15);
     });
     const bufA = (await api("/api/status")).latency_ms ?? (await api("/api/status")).cfg?.latency_ms;
@@ -104,14 +105,17 @@ try {
     const d = {}; for (const k of ["played", "late", "unsynced", "resyncs", "far", "gaps", "jumps"]) d[k] = b[k] - a[k];
     d.buffer = `${bufA}→${bufB} ms`;
     d.link = [...levels].join("/") || "?";
-    d.frames = b.frames; d.fps = +(b.frames / SECONDS).toFixed(1); d.rtt = Math.round(b.rtt);
+    d.frames = b.frames;
+    d.mode = await page.evaluate(() => (window.__pbsVideoFrames || 0) > 0 ? "video" : "pictures"); d.fps = +(b.frames / SECONDS).toFixed(1); d.rtt = Math.round(b.rtt);
     return d;
   };
-  console.log(`${process.argv.includes("--busy") ? "busy screen, " : ""}phone CPU ${CPU}x slower, ${MBPS ? `Wi-Fi link ${MBPS} Mbit/s` : "no link limit"}, ${SECONDS} s per run`);
+  console.log(`${process.argv.includes("--video") ? "VIDEO, " : ""}${process.argv.includes("--busy") ? "busy screen, " : ""}phone CPU ${CPU}x slower, ${MBPS ? `Wi-Fi link ${MBPS} Mbit/s` : "no link limit"}, ${SECONDS} s per run`);
   const off = await phase("off");
   const on = await phase("screen");
   for (const [name, r] of [["screen off", off], ["screen on", on]])
-    console.log(`${name.padEnd(11)} played ${String(r.played).padStart(5)}  late ${String(r.late).padStart(3)}  unsynced ${String(r.unsynced).padStart(4)}  resyncs ${String(r.resyncs).padStart(3)}  clock jumps ${r.jumps}  clock rtt ${r.rtt} ms  buffer ${r.buffer}  link ${r.link}` + (name === "screen on" ? `  pictures ${r.frames} (${r.fps}/s)` : ""));
+    console.log(`${name.padEnd(11)} played ${String(r.played).padStart(5)}  late ${String(r.late).padStart(3)}  unsynced ${String(r.unsynced).padStart(4)}  resyncs ${String(r.resyncs).padStart(3)}  clock jumps ${r.jumps}  clock rtt ${r.rtt} ms  buffer ${r.buffer}  link ${r.link}` + (name === "screen on" ? `  ${r.mode} ${r.frames} (${r.fps}/s)` : ""));
+  const jsonAt = process.argv.indexOf("--json");
+  if (jsonAt > 0) fs.writeFileSync(process.argv[jsonAt + 1], JSON.stringify({ when: new Date().toISOString(), video: process.argv.includes("--video"), busy: process.argv.includes("--busy"), cpu: CPU, mbps: MBPS, seconds: SECONDS, off, on }, null, 1));
   const bad = on.late + on.unsynced + on.jumps + Math.max(0, on.resyncs - 1) + (/weak|poor/.test(on.link) && !/weak|poor/.test(off.link) ? 1 : 0);
   failed = bad > 0 || on.played < off.played * 0.97 || on.frames === 0;
   console.log(failed ? "FAIL: the sound was disturbed while the screen was shown" : "PASS: the sound was not disturbed by the screen");

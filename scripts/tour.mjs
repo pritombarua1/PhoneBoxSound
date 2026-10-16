@@ -61,7 +61,7 @@ export const SLIDES = [
   ["Control the PC", "phone-keys", "Keys and shortcuts",
     "Ctrl, Shift, Alt, Win, arrows, function keys, ready-made shortcuts and your own. In the type box, Enter starts a new line; Send (or Shift+Enter) types the whole text on the PC."],
   ["Control the PC", "phone-screen", "See the PC's screen",
-    "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound."],
+    "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound. With the free video helper it plays as smooth video, up to 30 frames a second."],
   ["Control the PC", "phone-magnifier", "Magnifier",
     "A zoomed view that follows the pointer, for small buttons and text."],
   ["Control the PC", "phone-clipboard", "Clipboard",
@@ -116,6 +116,7 @@ export const SETTINGS = [
   [/^commands/i, "Commands", "Make buttons that run a program or script on this PC. Phones with the \"PC commands\" permission can press them, never create or change them."],
   [/^files/i, "Files", "The one folder phones with the \"Files\" permission can send to and download from."],
   [/^pairing/i, "Pairing & network", "The room code (make a new one any time), the addresses phones use, and the port (changing it moves connected phones along). Switches: advertise as phoneboxsound.local, the secure server, the warning-free https address, Approve new phones, Lockdown, Strict security (PC controls only for phones that proved their key). Disconnect all phones is here too."],
+  [/^screen view/i, "Screen view", "How phones see this PC's screen. With the free video helper (one 80 MB download, offered here) the screen is sent as smooth video, up to 30 frames a second, encoded by the PC's own video chip, using a fraction of the Wi-Fi. Without it, or on older phones, it is sent as pictures. Either way the sound always comes first."],
   [/^sync/i, "Sync", "The PC's own speakers in step with the phones; a lighter stream for a phone on poor Wi-Fi (it also tells you to come closer); automatic buffer with its minimum and maximum; lip-sync for VLC, MPC-HC and mpv."],
   [/^player integrations/i, "Player integrations", "Browsers, Spotify and Windows apps work by themselves. VLC, MPC-HC and mpv get a one-click or one-line setup for full timeline control. The browser extension is offered here."],
   [/^search/i, "Search", "Optional keys: a YouTube key (without one, search still works), and your Spotify app's ID to link your account for queue, likes and playlists."],
@@ -160,6 +161,7 @@ export const STEPS = {
 };
 const SETTINGS_STEPS = {
   "Start with Windows": ["Open Settings", "Flip the first switch"],
+  "Screen view": ["Open Settings, Screen view", "Press Download the video helper (once)", "Give a phone the Screen view permission"],
   "Pairing & network": ["\"New code\" changes the room code", "Type a port and press Move to change it", "Flip Approve, Lockdown and Strict as needed"],
   "Commands": ["Type a name and what to run", "Press Add", "Give a phone the \"PC commands\" permission"],
   "Search": ["Paste a YouTube key (optional)", "Paste your Spotify app's ID", "Press Connect"],

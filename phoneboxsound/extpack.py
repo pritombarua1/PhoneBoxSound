@@ -12,7 +12,9 @@ BROWSERS = ("chrome", "firefox")      # "chrome" also covers Edge, Brave, Opera,
 
 
 def manifest(source, browser):
+    from . import __version__
     m = json.loads(source)
+    m["version"] = __version__             # one version for the app and the extension: each release is newer
     if browser == "firefox":
         m["background"] = {"scripts": m["background"]["scripts"]}
     else:
@@ -21,12 +23,26 @@ def manifest(source, browser):
     return m
 
 
+def shipped_stores():
+    """The store pages published with this version (extension/stores.json), https only."""
+    base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "extension", "stores.json")
+    import sys
+    if getattr(sys, "frozen", False):
+        base = os.path.join(getattr(sys, "_MEIPASS", ""), "extension", "stores.json")
+    try:
+        with open(base, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return {k: v for k, v in data.items() if k in ("chrome", "firefox", "edge") and isinstance(v, str) and v.startswith("https://")}
+
+
 def files(folder, browser="chrome", port=8080, theme="forest"):
     """{name: bytes} for one browser."""
     out = {}
     for f in sorted(os.listdir(folder)):
         path = os.path.join(folder, f)
-        if f.startswith(".") or f.endswith(".md") or f in ("config.js",) or not os.path.isfile(path):
+        if f.startswith(".") or f.endswith(".md") or f in ("config.js", "stores.json") or not os.path.isfile(path):
             continue
         with open(path, "rb") as h:
             out[f] = h.read()

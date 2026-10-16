@@ -152,6 +152,37 @@ function PlayerRow({ id, name, note }: { id: string; name: string; note: string 
   );
 }
 
+/** Screen view as video: the one-time helper download, and the switch. */
+function ScreenVideo({ S, on }: { S: ServerState; on: boolean }) {
+  const v = S.video;
+  if (!v) return null;
+  const mb = (n: number) => Math.round(n / 1048576);
+  return (
+    <div className="card">
+      <div className="card-h"><h3>Screen view</h3><span className="sub">how phones with the Screen view permission see this PC</span></div>
+      {v.available ? <>
+        <div className="perm-row"><span><b>Send the screen as video</b>: smooth (up to 30 frames a second) and light on Wi-Fi<br />
+          <span className="muted">Encoded by {v.encoder}{v.source === "this PC" ? ", with the FFmpeg already on this PC" : ""}. Phones too old for video get pictures.</span></span>
+          <div className="spacer" /><Switch checked={on} onChange={(x) => setGlobal({ screen_video: x })} /></div>
+      </> : v.installing ? <>
+        <p>Downloading the video helper… {mb(v.installing.done)} of {mb(v.installing.total)} MB</p>
+        <div className="progress"><i style={{ width: `${Math.min(100, (100 * v.installing.done) / Math.max(1, v.installing.total))}%` }} /></div>
+      </> : !v.installed ? <>
+        <p>The screen is sent as pictures now. For <b>smooth screen view</b> like remote-desktop programs (up to 30 frames
+          a second, a fraction of the Wi-Fi), PhoneBoxSound uses <b>FFmpeg</b>, a free video encoder, with this PC's own video chip.</p>
+        <p className="muted">One download of {v.size_mb} MB from the FFmpeg-Builds project on GitHub (the LGPL edition), checked against its
+          published checksum, kept in PhoneBoxSound's data folder and used as a separate program. FFmpeg's own licence (LGPL) applies to it.</p>
+        <button className="btn accent" onClick={() => send({ t: "video_install" })}><Icon name="download" />Download the video helper ({v.size_mb} MB)</button>
+      </> : <>
+        <p>{v.checked ? (v.error || "No video encoder worked on this PC.") : "Checking which video encoder this PC has…"} Screen view uses pictures.</p>
+        <button className="btn" onClick={() => send({ t: "video_check" })}>Check again</button>
+      </>}
+      {v.error && v.installed && v.available && <p className="note err">{v.error}</p>}
+      {v.error && !v.installed && <p className="note err">{v.error}</p>}
+    </div>
+  );
+}
+
 export default function Settings() {
   const S = useStore(app, (s) => s.S)!;
   const version = useStore(app, (s) => s.version);
@@ -226,6 +257,8 @@ export default function Settings() {
         <p className="note">The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access.</p>
       </div>
 
+      <ScreenVideo S={S} on={c.screen_video !== false} />
+
       <div className="card">
         <div className="card-h"><h3>Sync</h3></div>
         {S.pc_out && <PcSpeaker p={S.pc_out} />}
@@ -276,7 +309,7 @@ export default function Settings() {
         <div className="card-h"><h3>Diagnostics</h3><div className="spacer" /><a className="btn sm" href="/api/diagnostics"><Icon name="download" />Export</a></div>
         <div className="kv" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>{diag.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div>
         <p className="note">The export contains settings, device health and recent logs, with no tokens or passwords. Attach it to a GitHub issue.</p>
-        <p className="muted" style={{ marginBottom: 0 }}>PhoneBoxSound by Pritom Barua · free software under the GNU GPL v3 ·{" "}
+        <p className="muted" style={{ marginBottom: 0 }}>PhoneBoxSound by Pritom Barua · free for non-commercial use (PolyForm Noncommercial; commercial use needs a licence) ·{" "}
           <a href="https://github.com/pritombarua1/PhoneBoxSound" target="_blank" rel="noreferrer">github.com/pritombarua1/PhoneBoxSound</a></p>
       </div>
     </div>

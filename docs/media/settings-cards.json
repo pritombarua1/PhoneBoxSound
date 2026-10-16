@@ -22,36 +22,41 @@
  {
   "file": "set-4",
   "title": "Pairing & network",
-  "text": "Pairing & network New code Room code 8103 Wi-Fi / LAN http://192.168.0.2:8095 Wi-Fi / LAN http://10.242.0.214:8095 Wi-Fi / LAN http://192.168.56.1:8095 Wi-Fi / LAN http://172.25.64.1:8095 Secure https://192.168.0.2:8496 Port phones and this page follow by themselves Move Advertise as phoneboxsound.local Secure server for intercom & app install (restart needed) Warning-free https address via local-ip.sh (restart needed) Approve new phones : the code alone isn't enough Lockdown : no phone controls the PC, no new phones, no remote API Strict security : PC controls only for verified phones Disconnect all phones The same port answers http and https. On the secure address every phone creates its own key that never leaves it and signs in with that key, so a copied token or a faked address can't pose as it. With strict security on, touchpad, clipboard, screen view, files, commands, power and managing speakers only work for those verified phones. A wrong code locks an address out for a minute after 5 tries. The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access."
+  "text": "Pairing & network New code Room code 6412 Wi-Fi / LAN http://192.168.0.2:8095 Wi-Fi / LAN http://10.242.0.214:8095 Wi-Fi / LAN http://192.168.56.1:8095 Wi-Fi / LAN http://172.25.64.1:8095 Secure https://192.168.0.2:8496 Port phones and this page follow by themselves Move Advertise as phoneboxsound.local Secure server for intercom & app install (restart needed) Warning-free https address via local-ip.sh (restart needed) Approve new phones : the code alone isn't enough Lockdown : no phone controls the PC, no new phones, no remote API Strict security : PC controls only for verified phones Disconnect all phones The same port answers http and https. On the secure address every phone creates its own key that never leaves it and signs in with that key, so a copied token or a faked address can't pose as it. With strict security on, touchpad, clipboard, screen view, files, commands, power and managing speakers only work for those verified phones. A wrong code locks an address out for a minute after 5 tries. The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access."
  },
  {
   "file": "set-5",
+  "title": "Screen view",
+  "text": "Screen view how phones with the Screen view permission see this PC The screen is sent as pictures now. For smooth screen view like remote-desktop programs (up to 30 frames a second, a fraction of the Wi-Fi), PhoneBoxSound uses FFmpeg, a free video encoder, with this PC's own video chip. One download of 80 MB from the FFmpeg-Builds project on GitHub (the LGPL edition), checked against its published checksum, kept in PhoneBoxSound's data folder and used as a separate program. FFmpeg's own licence (LGPL) applies to it. Download the video helper (80 MB)"
+ },
+ {
+  "file": "set-6",
   "title": "Sync",
   "text": "Sync This PC's speakers in step with the phones Windows plays at once; phones play a moment later, so the PC is always ahead. Switched on, PhoneBoxSound plays a copy on the output you choose here, delayed by exactly the sync buffer and kept on the same clock as the phones. Lighter stream for a phone while its connection is poor (back to full by itself) Auto buffer (adapts to your Wi-Fi) Lip-sync: shift the player's audio so phones match the picture (VLC, MPC-HC, mpv) Buffer 210 ms · auto Auto minimum 80 ms Auto maximum 450 ms"
  },
  {
-  "file": "set-6",
+  "file": "set-7",
   "title": "Player integrations",
   "text": "Player integrations Browser tabs extension not connected Get it for Chrome How to add it A second hand for your browser. Without it, Windows shows one entry per browser and the browser decides which tab that is. With it, every tab that plays is listed by itself, with exact position, seeking, speed and volume. Keep the picture in step with the phones (shows it later by the sync buffer) Works for ordinary web video (YouTube, Twitch, news and social sites). Copy-protected films (Netflix, Prime Video, Disney+) do not let any program copy their frames, so their picture is left as it is. Store links (after publishing) Browsers, Spotify, Windows apps Automatic MPC-HC / MPC-BE Enable full control Works right away, with timeline and scrubbing. Full control adds a clean video frame as artwork and live skimming while you drag. PotPlayer Automatic VLC Enable full control One click turns on VLC's web interface for this PC only (port 8081, random password). VLC restarts once if it's open. mpv IPC pipe Start mpv with --input-ipc-server=\\\\.\\pipe\\mpvsocket."
  },
  {
-  "file": "set-7",
+  "file": "set-8",
   "title": "Search",
   "text": "Search results with pictures on the phones; tap to play on this PC Apple Music works by itself (Apple's public catalogue) YouTube works by itself (through yt-dlp) Spotify using your client id and secret Netflix, Prime Video, Disney+ don't share results with other programs: their button opens their own search on this PC Save keys Spotify account connected as Demo account Disconnect Adds what Windows can't pass on: the queue, exact repeat (this song / all / off), shuffle, like, and \"Play next\" from search. You sign in on Spotify's own page; PhoneBoxSound never sees your password. Changing playback needs Spotify Premium. Each phone needs the Search and play permission (Devices). What you type is sent to the services you search, from this PC; phones only ever talk to this PC. Keys are stored with your other settings (encrypted once a password is set)."
  },
  {
-  "file": "set-8",
+  "file": "set-9",
   "title": "Password & encrypted storage",
   "text": "Password & encrypted storage No password yet: anyone at this PC can open the dashboard, and the settings file is readable. Set one to lock the dashboard and encrypt the storage. Also ask for it every time the server starts The password is never stored, so nobody can show it to you again, and there is no reset without it. If you lose it, the saved phones and settings are gone for good. Write it down somewhere safe. Set password"
  },
  {
-  "file": "set-9",
+  "file": "set-10",
   "title": "API & automation",
-  "text": "API & automation New token WA5M••••••••••uOf Status What's playing List phones Play / pause Skip forward 30 s Next track Repeat one song PC volume 40% Pause all phones Phones master volume 70% Apply scene: Movie Press Ctrl+S Type text Read clipboard Set clipboard Sleep the PC Cancel sleep / shutdown Copy command curl -H \"Authorization: Bearer <token>\" \\ http://192.168.0.2:8095/api/status Webhooks (one URL per line) Save Events: device_connected, device_disconnected, media_changed, intercom_started, intercom_stopped, scene_applied, streaming."
+  "text": "API & automation New token fI3j••••••••••kdl Status What's playing List phones Play / pause Skip forward 30 s Next track Repeat one song PC volume 40% Pause all phones Phones master volume 70% Apply scene: Movie Press Ctrl+S Type text Read clipboard Set clipboard Sleep the PC Cancel sleep / shutdown Copy command curl -H \"Authorization: Bearer <token>\" \\ http://192.168.0.2:8095/api/status Webhooks (one URL per line) Save Events: device_connected, device_disconnected, media_changed, intercom_started, intercom_stopped, scene_applied, streaming."
  },
  {
-  "file": "set-10",
+  "file": "set-11",
   "title": "Diagnostics",
-  "text": "Diagnostics Export Capture capturing Device Demo music Sample rate 48000 Hz Ports 8095 / 8496 (https) mDNS off Version 3.1.1 The export contains settings, device health and recent logs, with no tokens or passwords. Attach it to a GitHub issue. PhoneBoxSound by Pritom Barua · free software under the GNU GPL v3 · github.com/pritombarua1/PhoneBoxSound"
+  "text": "Diagnostics Export Capture capturing Device Demo music Sample rate 48000 Hz Ports 8095 / 8496 (https) mDNS off Version 3.2.0 The export contains settings, device health and recent logs, with no tokens or passwords. Attach it to a GitHub issue. PhoneBoxSound by Pritom Barua · free for non-commercial use (PolyForm Noncommercial; commercial use needs a licence) · github.com/pritombarua1/PhoneBoxSound"
  }
 ]

@@ -19,6 +19,7 @@ Only when you switch on a feature that needs it, and only with the service named
 | Search | YouTube (yt-dlp or your own API key), Apple's iTunes Search API, Spotify | the words you search for |
 | Spotify account link | Spotify Web API | your sign-in, done on Spotify's own page; then requests for your queue, likes and playlists |
 | Warning-free https address | local-ip.sh | a request for a public certificate |
+| Screen video helper (only when you press its download button) | github.com (FFmpeg-Builds) | a download of FFmpeg, once |
 | `start.bat` (source code only) | python.org / winget, pypi.org, nodejs.org, npmjs.com | downloads of the parts it needs, once |
 
 Those services' own privacy policies apply to what they receive.

@@ -1,0 +1,35 @@
+{
+ "when": "2026-10-16T04:55:38.863Z",
+ "busy": true,
+ "cpu": 1,
+ "mbps": 20,
+ "seconds": 15,
+ "off": {
+  "played": 1510,
+  "late": 0,
+  "unsynced": 0,
+  "resyncs": 0,
+  "far": 0,
+  "gaps": 0,
+  "jumps": 0,
+  "buffer": "250→230 ms",
+  "link": "excellent",
+  "frames": 0,
+  "fps": 0,
+  "rtt": 5
+ },
+ "on": {
+  "played": 1509,
+  "late": 0,
+  "unsynced": 0,
+  "resyncs": 0,
+  "far": 0,
+  "gaps": 0,
+  "jumps": 0,
+  "buffer": "230→230 ms",
+  "link": "good",
+  "frames": 82,
+  "fps": 5.5,
+  "rtt": 5
+ }
+}

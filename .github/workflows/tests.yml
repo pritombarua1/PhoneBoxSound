@@ -1,6 +1,7 @@
 # Every push and pull request: the unit tests, a type-checked build of the web app, the load test
 # (simulated phones) and the screen-view check (the sound must not suffer while the screen is shown),
-# on GitHub's own Windows machines.
+# on GitHub's own Windows machines. On main, the results also go to the project's website:
+# https://pritombarua1.github.io/PhoneBoxSound/results.html (with the guide and the guided tour).
 name: Tests
 
 on:
@@ -11,6 +12,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -35,21 +40,67 @@ jobs:
           python -m pip install --disable-pip-version-check --require-hashes -r requirements-lock.txt
 
       - name: Unit tests
-        run: python -m pytest tests -q
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force bench | Out-Null
+          python -m pytest tests -q 2>&1 | Tee-Object -FilePath bench/unit.txt
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       - name: Build the web app (type-checked)
         run: npm run build
 
       - name: Load test (1, 10, 30 and 50 simulated phones)
-        run: python scripts/loadtest.py --phones 1 10 30 50 --seconds 15 --json loadtest.json
+        run: python scripts/loadtest.py --phones 1 10 30 50 --seconds 15 --json bench/loadtest.json
 
       - name: Screen view must not disturb the sound (busy screen, slow phone, 4 and 20 Mbit/s links)
         run: |
-          node scripts/screencheck.mjs --busy --cpu 2 --mbps 4
-          node scripts/screencheck.mjs --busy --cpu 1 --mbps 20
+          node scripts/screencheck.mjs --busy --cpu 2 --mbps 4 --json bench/screen-4.json
+          node scripts/screencheck.mjs --busy --cpu 1 --mbps 20 --json bench/screen-20.json
+
+      - name: Screen view as video must not disturb the sound either (helper downloaded the way the dashboard does it)
+        run: |
+          python -c "import asyncio, sys; sys.path.insert(0, '.'); from phoneboxsound.video import Video; v = Video('data'); asyncio.run(v.install()); print(v.status()); sys.exit(0 if v.encoder else 1)"
+          node scripts/screencheck.mjs --video --cpu 2 --mbps 4 --json bench/screen-video-4.json
+          node scripts/screencheck.mjs --video --cpu 1 --mbps 20 --json bench/screen-video-20.json
+
+      - name: Results page
+        if: always()
+        run: node scripts/results.mjs bench
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: measurements
-          path: loadtest.json
+          path: |
+            bench
+            docs/results.html
+
+  website:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: measurements
+          path: measured
+
+      - name: The guide, the guided tour and this run's results page
+        run: |
+          cp measured/docs/results.html docs/results.html
+          mkdir -p docs/bench && cp measured/bench/*.json docs/bench/ 2>/dev/null || true
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs
+
+      - id: deploy
+        uses: actions/deploy-pages@v5

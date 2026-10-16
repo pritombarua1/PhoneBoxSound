@@ -58,7 +58,30 @@ export const phone = createStore({
 });
 
 /** Screen-view frames go straight to whoever is showing them (the touchpad), not through React state. */
-export const screenView = { onFrame: null as ((jpeg: Blob, cx: number, cy: number, done: () => void) => void) | null };
+export const screenView = {
+  onFrame: null as ((jpeg: Blob, cx: number, cy: number, done: () => void) => void) | null,
+  onVideo: null as ((frame: VideoFrame, cx: number, cy: number) => void) | null,     // draws, then closes the frame
+};
+
+/** Can this phone play the screen as H.264 video (WebCodecs, hardware decoding)? Checked once. */
+export const videoSupport = { ok: false };
+(async () => {
+  try {
+    const VD = (window as any).VideoDecoder;
+    if (VD) videoSupport.ok = !!(await VD.isConfigSupported({ codec: "avc1.42E01F", optimizeForLatency: true })).supported;
+  } catch { videoSupport.ok = false; }
+})();
+
+/** "avc1.PPCCLL" from the stream's SPS: what the decoder is told to expect. */
+function avcCodec(au: Uint8Array) {
+  for (let i = 0; i + 7 < au.length; i++) {
+    if (au[i] === 0 && au[i + 1] === 0 && au[i + 2] === 1 && (au[i + 3] & 0x1f) === 7) {
+      const h = (b: number) => b.toString(16).padStart(2, "0");
+      return "avc1." + h(au[i + 4]) + h(au[i + 5]) + h(au[i + 6]);
+    }
+  }
+  return null;
+}
 
 let deviceId = store.get("pbs.device");
 let token = store.get("pbs.token");
@@ -706,6 +729,37 @@ export function screenLink(on: boolean) {
   // back together, and say "ok" only once it is on screen: the PC sends the next one after that.
   let parts: ArrayBuffer[] = [], partsOf = -1;
   const ack = () => { if (sock.readyState === 1) sock.send("ok"); };
+  // Video: decoded by the phone's own hardware. A decoder that loses track asks for a full frame ("key").
+  let decoder: any = null, codec = "", needKey = true;
+  const cursorAt = new Map<number, [number, number]>();
+  const resetDecoder = () => { try { decoder?.close(); } catch { /* closed */ } decoder = null; codec = ""; needKey = true; if (sock.readyState === 1) sock.send("key"); };
+  const playVideo = (au: Uint8Array, key: boolean, ts: number, cx: number, cy: number) => {
+    if (needKey && !key) return;
+    if (key) {
+      const c = avcCodec(au);
+      if (c && (!decoder || c !== codec)) {
+        try { decoder?.close(); } catch { /* closed */ }
+        const VD = (window as any).VideoDecoder;
+        decoder = new VD({
+          output: (frame: VideoFrame) => {
+            const at = cursorAt.get(frame.timestamp) || [-1, -1];
+            cursorAt.delete(frame.timestamp);
+            if (screenView.onVideo) screenView.onVideo(frame, at[0], at[1]); else frame.close();
+            ack();
+          },
+          error: () => resetDecoder(),
+        });
+        decoder.configure({ codec: c, optimizeForLatency: true, hardwareAcceleration: "prefer-hardware" });
+        codec = c;
+      }
+      needKey = false;
+    }
+    if (!decoder) return;
+    const t = Math.round(ts * 1000);
+    cursorAt.set(t, [cx, cy]);
+    if (cursorAt.size > 60) cursorAt.delete(cursorAt.keys().next().value as number);
+    try { decoder.decode(new (window as any).EncodedVideoChunk({ type: key ? "key" : "delta", timestamp: t, data: au })); } catch { resetDecoder(); }
+  };
   sock.onmessage = (e) => {
     if (typeof e.data === "string") return;
     const p = parsePacket(e.data);
@@ -716,6 +770,13 @@ export function screenLink(on: boolean) {
       parts[idx] = e.data.slice(24);
       if (parts.filter(Boolean).length < count) return;
     } else parts = [e.data.slice(24)];
+    if (p.ch === 1 || p.ch === 2) {            // video: 1 = a "what changed" frame, 2 = a full frame
+      const size = parts.reduce((n, b) => n + b.byteLength, 0), au = new Uint8Array(size);
+      let at = 0; for (const b of parts) { au.set(new Uint8Array(b), at); at += b.byteLength; }
+      parts = []; partsOf = -1;
+      playVideo(au, p.ch === 2, p.ts, p.frames === 65535 ? -1 : p.frames / 65534, p.sr === 65535 ? -1 : p.sr / 65534);
+      return;
+    }
     const jpeg = new Blob(parts, { type: "image/jpeg" });
     parts = []; partsOf = -1;
     let acked = false;
@@ -724,6 +785,6 @@ export function screenLink(on: boolean) {
     if (screenView.onFrame) screenView.onFrame(jpeg, p.frames === 65535 ? -1 : p.frames / 65534, p.sr === 65535 ? -1 : p.sr / 65534, done);
     else done();
   };
-  sock.onclose = () => { if (screenSock === sock) screenSock = null; };
+  sock.onclose = () => { if (screenSock === sock) screenSock = null; try { decoder?.close(); } catch { /* closed */ } };
   screenSock = sock;
 }

@@ -3,7 +3,7 @@ import { Icon } from "../lib/icons";
 import { useStore } from "../lib/store";
 import { Range, Seg, Switch } from "../lib/ui";
 import { cx, store, vibrate } from "../lib/util";
-import { input, phone, screenLink, screenView, send } from "./engine";
+import { input, phone, screenLink, screenView, send, videoSupport } from "./engine";
 import Keys from "./Keys";
 
 const VIEWS = [{ v: "off", label: "Off" }, { v: "screen", label: "Screen" }, { v: "window", label: "Window" }, { v: "zoom", label: "Magnifier" }] as const;
@@ -63,6 +63,7 @@ export default memo(function Touchpad() {
   const setView = (v: View) => { store.set("pbs.view", v); setViewState(v); };
   const setZoom = (z: string) => { store.set("pbs.zoom", z); setZoomState(z); };
   const img = useRef<HTMLImageElement>(null), box = useRef<HTMLDivElement>(null), cur = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
 
   // Screen view: the PC's picture inside the pad, with the real cursor drawn on it.
   useEffect(() => {
@@ -82,12 +83,30 @@ export default memo(function Touchpad() {
         b.style.width = w + "px"; b.style.height = w / ar + "px";
       };
       im.src = next;
+      im.style.display = ""; if (canvas.current) canvas.current.style.display = "none";
+      const c = cur.current;
+      if (c) { c.style.display = cx < 0 ? "none" : "block"; c.style.left = cx * 100 + "%"; c.style.top = cy * 100 + "%"; }
+    };
+    // video frames: drawn on a canvas in place of the picture
+    let shown = "";
+    screenView.onVideo = (frame, cx, cy) => {
+      const cv = canvas.current, im = img.current;
+      if (!cv) { frame.close(); return; }
+      if (cv.width !== frame.displayWidth || cv.height !== frame.displayHeight) { cv.width = frame.displayWidth; cv.height = frame.displayHeight; shown = ""; }
+      cv.getContext("2d")!.drawImage(frame, 0, 0);
+      frame.close();
+      (window as any).__pbsVideoFrames = ((window as any).__pbsVideoFrames || 0) + 1;   // for the tests
+      if (shown !== "video") {
+        shown = "video"; cv.style.display = "block"; if (im) im.style.display = "none";
+        const p = pad.current, b = box.current;
+        if (p && b) { const ar = cv.width / cv.height, w = Math.min(p.clientWidth, p.clientHeight * ar); b.style.width = w + "px"; b.style.height = w / ar + "px"; }
+      }
       const c = cur.current;
       if (c) { c.style.display = cx < 0 ? "none" : "block"; c.style.left = cx * 100 + "%"; c.style.top = cy * 100 + "%"; }
     };
     screenLink(true);
-    send({ t: "screen", mode: view, zoom: +zoom });
-    return () => { screenView.onFrame = null; send({ t: "screen", mode: null }); screenLink(false); if (url) URL.revokeObjectURL(url); };
+    send({ t: "screen", mode: view, zoom: +zoom, video: view === "screen" && videoSupport.ok });
+    return () => { screenView.onFrame = null; screenView.onVideo = null; send({ t: "screen", mode: null }); screenLink(false); if (url) URL.revokeObjectURL(url); };
   }, [view, canView, zoom]);
 
   useEffect(() => {
@@ -217,7 +236,7 @@ export default memo(function Touchpad() {
     <div className="col" style={{ gap: 12 }}>
       <div className={cx("pad", locked && "dragging", view !== "off" && canView && "viewing")} ref={pad}>
         {view !== "off" && canView
-          ? <div className="screenwrap"><div className="screenbox" ref={box}><img ref={img} alt="" draggable={false} /><div className="pccursor" ref={cur} /></div></div>
+          ? <div className="screenwrap"><div className="screenbox" ref={box}><img ref={img} alt="" draggable={false} /><canvas ref={canvas} className="screenvideo" style={{ display: "none" }} /><div className="pccursor" ref={cur} /></div></div>
           : <div className="lbl">Tap = click · tap-then-hold or long-press = drag · 2 fingers = scroll / right-click</div>}
         <div className="dotp" ref={dot} /><div className="strip" ref={strip}><span>scroll</span></div>
       </div>

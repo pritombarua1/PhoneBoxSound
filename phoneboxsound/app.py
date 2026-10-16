@@ -630,7 +630,11 @@ def build_app(hub, args):
         try:
             async for msg in ws:
                 if msg.type == WSMsgType.TEXT:
-                    c.screen_ack.set()          # "got it": the next picture may be made
+                    if msg.data == "key":
+                        c.screen_need_key = True    # the phone's video decoder lost track
+                    else:
+                        c.screen_acks += 1
+                        c.screen_ack.set()          # "shown": the next picture may be made
         finally:
             if c.screen_ws is ws:
                 c.screen_ws = None
@@ -1268,6 +1272,12 @@ async def run(args):
     if not args.demo:
         from .textfocus import TextFocus
         hub.textfocus = TextFocus()
+    from .video import Video
+    hub.video = Video(DATA, demo=args.demo)
+    if not args.demo or os.environ.get("PHONEBOXSOUND_DEMO_VIDEO"):
+        asyncio.get_running_loop().call_later(2, lambda: asyncio.ensure_future(hub.video.check()))   # after start-up, off the critical path
+    else:
+        hub.video.checked = True                     # the demo shows pictures unless a test asks for video
     hub.journal = journal
     loop = asyncio.get_running_loop()
 

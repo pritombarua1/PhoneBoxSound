@@ -81,6 +81,9 @@ class Client:
         self.screen_ws = None
         self.screen_ack = asyncio.Event()
         self.screen_strain = 0.0     # when the phone last said its sound was arriving with too little time to spare
+        self.screen_video = False    # this phone can play the screen as video (WebCodecs H.264)
+        self.screen_acks = 0         # video frames the phone has shown
+        self.screen_need_key = False # the phone's decoder lost track: start the video again from a full frame
         self.screen_ms = None
         self.link_since = (None, time.time())        # (level, since when)
         self.auto_saver = False
@@ -246,6 +249,7 @@ class Hub:
         self.handoffs = {}  # one-time token -> (device_id, expires)
         self.journal = None  # journal.Journal, set at start-up
         self.pcout = None    # pcout.PcOut, set at start-up
+        self.video = None    # video.Video, set at start-up: screen view as video
         self.textfocus = self.desktop if hasattr(self.desktop, "over") else None    # textfocus.TextFocus on a real PC (set at start-up)
         from .search import Search
         from .spotify import Spotify
@@ -748,12 +752,100 @@ class Hub:
         finally:
             c.screen_mode = None
 
+    def video_ok(self, c):
+        return bool(self.video and self.video.encoder and self.cfg.get("screen_video", True)
+                    and c.screen_video and c.screen_mode == "screen" and c.screen_ws is not None)
+
+    async def _screen_any(self, c):
+        """Video while the phone and the PC can do it; pictures otherwise (and as soon as video fails)."""
+        while c.screen_mode and self.clients.get(c.id) is c:
+            for _ in range(10):                  # the picture connection opens a moment after the request
+                if c.screen_ws is not None:
+                    break
+                await asyncio.sleep(0.1)
+            if self.video_ok(c):
+                if await self._video_loop(c):
+                    continue                     # stopped for a reason that allows trying again (new settings)
+                c.screen_video = False           # video did not work for this phone: pictures from now on
+            await self._screen_loop(c)
+            return
+
+    async def _video_loop(self, c):
+        """Screen view as H.264 video, the sound always first.
+
+        Each frame goes out in small paced slices, like the pictures. When the phone says "strain" (sound
+        arriving with little time to spare) the video stops at once and starts again a moment later at a
+        lower bitrate, from a full frame (so nothing half-decoded is left on the phone). After a calm
+        stretch it steps back up. At most a few frames are in flight: when the phone falls behind, the
+        frames in between are dropped and the video restarts from a full frame."""
+        from .audio import HEADER as H
+        enc = lambda v: 65535 if v < 0 else int(max(0.0, min(1.0, v)) * 65534)
+        from .video import cursor_on_screen
+        kbps, width, seq, sent_count = 1500, 1280, 0, 0
+        calm_since, rate = time.time(), 400_000.0
+        while self.video_ok(c):
+            fps = 30 if kbps >= 2500 else 24 if kbps >= 900 else 15
+            stream = self.video.start(width if kbps >= 700 else 960, fps, kbps)
+            if stream is None:
+                return False
+            c.screen_need_key, base = False, c.screen_acks
+            sent_here, got_any, restart = 0, False, None
+            try:
+                while self.video_ok(c) and restart is None:
+                    try:
+                        f = await stream.next(3.0)
+                    except asyncio.TimeoutError:
+                        if not stream.alive or not got_any:
+                            log.info("screen video stopped: %s", stream.error or "no frames")
+                            return False
+                        continue
+                    got_any = True
+                    if time.time() - c.screen_strain < 1.0:
+                        restart = "strain"
+                        break
+                    if c.screen_need_key:
+                        restart = "key"
+                        break
+                    if sent_here - (c.screen_acks - base) > 4:
+                        restart = "behind"            # the phone fell behind: skip ahead from a full frame
+                        break
+                    cx, cy = (self.desktop.cursor if self.desktop.demo else cursor_on_screen())
+                    seq += 1
+                    piece = int(max(4_000, min(16_000, rate * 0.012)))
+                    parts = [f.data[k:k + piece] for k in range(0, len(f.data), piece)] or [b""]
+                    ws = c.screen_ws
+                    for idx, part in enumerate(parts):
+                        flags = 0 if len(parts) == 1 else ((len(parts) << 16) | idx)
+                        await ws.send_bytes(H.pack(KIND_SCREEN, 2 if f.key else 1, enc(cx), seq & 0xFFFFFFFF, f.t * 1000.0, enc(cy), flags) + part)
+                        if idx < len(parts) - 1:
+                            await asyncio.sleep(len(part) / rate)
+                    sent_here += 1
+                    sent_count += 1
+                    if self.journal:
+                        self.journal.count(c.device_id, "screen_out", len(f.data))
+                    c.screen_ms = round(1000 / fps)
+                    if time.time() - calm_since > 15 and kbps < 6000 and time.time() - c.screen_strain > 15:
+                        restart = "calm"
+            except Exception as e:
+                log.info("screen video ended: %s", e)
+                return False
+            finally:
+                stream.stop()
+            if restart == "strain":
+                kbps, rate = max(300, int(kbps * 0.6)), max(100_000.0, rate * 0.6)
+                calm_since = time.time()
+                await asyncio.sleep(1.0)              # the whole link for the sound for a moment
+            elif restart == "calm":
+                kbps, rate = min(6000, int(kbps * 1.3)), min(1_500_000.0, rate * 1.3)
+                calm_since = time.time()
+        return True
+
     def set_screen(self, c, mode, zoom=None):
         c.screen_mode = mode if mode in ("screen", "window", "zoom") else None
         if zoom:
             c.screen_zoom = clamp(float(zoom), 1.5, 10)
         if c.screen_mode and (c.screen_task is None or c.screen_task.done()):
-            c.screen_task = asyncio.create_task(self._screen_loop(c))
+            c.screen_task = asyncio.create_task(self._screen_any(c))
             self.event("screen", f"{c.dev['name']} is viewing the PC screen")
 
     def intercom_targets(self, target, exclude=None):
@@ -1138,6 +1230,7 @@ class Hub:
             c.clip_live = bool(m.get("on"))
             self.clip_seq = self.desktop.clipboard_seq()
         elif t == "screen" and (c.perms.get("screen") or not m.get("mode")):
+            c.screen_video = bool(m.get("video"))
             self.set_screen(c, m.get("mode"), m.get("zoom"))
         elif t in ("input", "clip_get", "clip_set", "clip_live", "screen") or (t == "media" and not c.perms["remote"]):
             self.denied(c, {"input": "keyboard & mouse", "screen": "screen view", "media": "the media remote"}.get(t, "the clipboard"))
@@ -1284,11 +1377,12 @@ class Hub:
     def state(self):
         cfg = {k: self.cfg[k] for k in ("latency_ms", "auto_latency", "min_latency_ms", "max_latency_ms", "master",
                                         "streaming", "source", "device", "theme", "mode", "duck_level", "zones",
-                                        "scenes", "webhooks", "vlc", "mpv", "mdns", "https", "lip_sync", "strict", "public_https", "lockdown", "approval", "browser_delay", "auto_quality", "auto_keyboard", "activity")}
+                                        "scenes", "webhooks", "vlc", "mpv", "mdns", "https", "lip_sync", "strict", "public_https", "lockdown", "approval", "browser_delay", "auto_quality", "auto_keyboard", "activity", "screen_video")}
         return {
             "t": "state", "code": self.code, "ips": self.ips, "ports": self.ports, "mdns": self.mdns_ok,
             "cfg": cfg, "api_token": self.cfg["api_token"],
             "terms_ok": self.terms_ok(),
+            "video": self.video.status() if self.video else None,
             "capture": {"status": self.capture.status, "error": self.capture.error, "device": self.capture.active_device,
                         "sample_rate": self.sample_rate, "devices": self.capture.devices},
             "devices": self.device_rows(), "pending": self.pending_rows(), "past": self.past_rows(), "media": self.media.public(),
@@ -1297,7 +1391,7 @@ class Hub:
             "public_url": self.https_url() if getattr(self, "public_https", False) else None,
             "pc_out": self.pcout.public() if self.pcout else None, "spotify": self.spotify.status(self.ports["http"]),
             "autostart": self.autostart_on(), "bedtime": self.extras.bedtime_state(), "search": self.search.status(),
-            "browsers": self.browser_rows(), "browser_hint": self.browser_hint(), "extension_urls": self.cfg["extension_urls"],
+            "browsers": self.browser_rows(), "browser_hint": self.browser_hint(), "extension_urls": self.extension_urls(),
             "blocked_ips": self.orphan_blocks(),
             "commands": self.cfg["commands"], "share_dir": self.share_dir() if self.input_log is None else r"Downloads\PhoneBoxSound", "host": self.host.dev["name"] if self.host else None,
             "power": {"action": self.power_pending["action"], "by": self.power_pending["by"],
@@ -1656,6 +1750,17 @@ class Hub:
             c.kbd_over = value
             c.send_json({"t": "kbd", "over": value}, urgent=True)
 
+    def extension_urls(self):
+        """Where to get the extension: a link set in Settings, else the published store pages that ship with
+        this version (extension/stores.json)."""
+        own = self.cfg.get("extension_urls") or {}
+        try:
+            from .extpack import shipped_stores
+            shipped = shipped_stores()
+        except Exception:
+            shipped = {}
+        return {k: own.get(k) or shipped.get(k) or "" for k in ("chrome", "firefox", "edge")}
+
     def autostart_on(self):
         if self.input_log is not None:           # demo / tests never touch the real registry
             return bool(getattr(self, "_demo_autostart", False))
@@ -1746,6 +1851,16 @@ class Hub:
         t = m.get("t")
         cfg = self.cfg
         reply = None
+        if t == "video_install" and self.video:
+            async def run():
+                await self.video.install(lambda: asyncio.ensure_future(self.broadcast_state()))
+                self.event("system", "Screen video: " + (f"ready ({self.video.encoder[1]})" if self.video.encoder else self.video.error or "not available"))
+                await self.broadcast_state()
+            asyncio.ensure_future(run())
+            await self.broadcast_state()
+        elif t == "video_check" and self.video:
+            await self.video.check(force=True)
+            await self.broadcast_state()
         if t == "accept_terms":
             self.accept_terms()
             await self.broadcast_state()
@@ -1769,7 +1884,7 @@ class Hub:
                 cfg["theme"] = m["theme"]
             if m.get("mode") in MODES:
                 cfg["mode"] = m["mode"]
-            for key in ("mdns", "https", "lip_sync", "strict", "public_https", "lockdown", "approval", "browser_delay", "auto_quality", "auto_keyboard", "activity"):
+            for key in ("mdns", "https", "lip_sync", "strict", "public_https", "lockdown", "approval", "browser_delay", "auto_quality", "auto_keyboard", "activity", "screen_video"):
                 if key in m:
                     cfg[key] = bool(m[key])
             if "activity" in m:

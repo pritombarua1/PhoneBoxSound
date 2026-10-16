@@ -1,7 +1,8 @@
 # Disclaimer and terms of use
 
-PhoneBoxSound is free, open-source software by Pritom Barua, published under the
-[GNU General Public License v3](LICENSE) (see [NOTICE.md](NOTICE.md)). By installing,
+PhoneBoxSound is free source-available software by Pritom Barua, published under the
+[PolyForm Noncommercial License 1.0.0](LICENSE): free for non-commercial use; commercial use needs a
+licence from the author (see [NOTICE.md](NOTICE.md)). By installing,
 running, copying, changing or sharing it, you accept the following.
 
 ## No warranty, no liability
@@ -44,6 +45,7 @@ on its first screen:
 | Python packages listed in `requirements.txt` | PyPI (pypi.org) | each package's own open-source licence |
 | Node.js 22 LTS, portable, inside this folder (only if the web app is not built yet) | nodejs.org | MIT and the licences listed in its package |
 | JavaScript packages listed in `package.json` | npmjs.com | each package's own open-source licence |
+| Screen video helper: FFmpeg, LGPL edition (only if you press *Download the video helper* in Settings → Screen view) | github.com/BtbN/FFmpeg-Builds, checked against its published checksum | GNU LGPL; used as a separate program, never built into PhoneBoxSound |
 
 When winget is used, `start.bat` passes `--accept-source-agreements --accept-package-agreements`, which
 accepts those agreements on your behalf: that is what you agree to on its first screen. The ready-made

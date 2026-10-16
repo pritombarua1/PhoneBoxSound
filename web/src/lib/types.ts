@@ -41,10 +41,11 @@ export interface ServerState {
     latency_ms: number; auto_latency: boolean; min_latency_ms: number; max_latency_ms: number; master: number; streaming: boolean;
     source: string; device: string | null; theme: string; mode: string; duck_level: number; lip_sync: boolean;
     zones: Record<string, { volume: number; muted: boolean }>; scenes: Scene[]; webhooks: string[];
-    vlc: Record<string, any>; mpv: Record<string, any>; mdns: boolean; https: boolean; strict: boolean; public_https: boolean; lockdown: boolean; approval: boolean; browser_delay: boolean; auto_quality: boolean; activity: boolean; auto_keyboard: boolean;
+    vlc: Record<string, any>; mpv: Record<string, any>; mdns: boolean; https: boolean; strict: boolean; public_https: boolean; lockdown: boolean; approval: boolean; browser_delay: boolean; auto_quality: boolean; activity: boolean; auto_keyboard: boolean; screen_video: boolean;
   };
   capture: { status: string; error: string | null; device: string | null; sample_rate: number | null; devices: string[] };
-  devices: DeviceRow[]; pending: PendingRow[]; past: PastRow[]; autostart: boolean; terms_ok: boolean; bedtime: Bedtime | null; pc_out: PcOut | null; spotify: SpotifyStatus; search: SearchStatus; browsers: BrowserLink[]; browser_hint: string[]; extension_urls: { chrome: string; firefox: string; edge: string }; blocked_ips: string[]; media: MediaState; talkers: { name: string; target: string }[]; targets: Target[];
+  devices: DeviceRow[]; pending: PendingRow[]; past: PastRow[]; autostart: boolean; terms_ok: boolean;
+  video: { available: boolean; encoder: string | null; installed: boolean; source: string | null; checked: boolean; installing: { done: number; total: number } | null; error: string | null; size_mb: number } | null; bedtime: Bedtime | null; pc_out: PcOut | null; spotify: SpotifyStatus; search: SearchStatus; browsers: BrowserLink[]; browser_hint: string[]; extension_urls: { chrome: string; firefox: string; edge: string }; blocked_ips: string[]; media: MediaState; talkers: { name: string; target: string }[]; targets: Target[];
   events: { t: number; kind: string; text: string }[];
   power: { action: string; by: string; seconds: number } | null;
   commands: { id: string; name: string; run: string }[]; share_dir: string; host: string | null; public_url: string | null;

@@ -190,7 +190,7 @@
  },
  {
   "title": "See the PC's screen",
-  "text": "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound.",
+  "text": "Needs \"Screen view\". The whole screen or only the active window, live, on its own connection so it never disturbs the sound. With the free video helper it plays as smooth video, up to 30 frames a second.",
   "steps": [
    "Switch \"Screen view\" on for the phone",
    "On the phone, open Pad options",
@@ -359,6 +359,15 @@
    "\"New code\" changes the room code",
    "Type a port and press Move to change it",
    "Flip Approve, Lockdown and Strict as needed"
+  ]
+ },
+ {
+  "title": "Screen view",
+  "text": "How phones see this PC's screen. With the free video helper (one 80 MB download, offered here) the screen is sent as smooth video, up to 30 frames a second, encoded by the PC's own video chip, using a fraction of the Wi-Fi. Without it, or on older phones, it is sent as pictures. Either way the sound always comes first.",
+  "steps": [
+   "Open Settings, Screen view",
+   "Press Download the video helper (once)",
+   "Give a phone the Screen view permission"
   ]
  },
  {

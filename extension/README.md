@@ -54,6 +54,43 @@ position, duration, speed, volume and whether it is paused. Tabs that play nothi
 No browsing history, no page content, no
 personal data, no analytics. Remote code is not used.
 
+## Submitting it to the stores (once per store)
+
+Build the two files with `npm run package:extension`, or take them from the latest GitHub release:
+`PhoneBoxSound-extension-chrome.zip` and `PhoneBoxSound-extension-firefox.zip`. Both pass the stores'
+automatic checks (the Firefox one is validated with Mozilla's own `addons-linter`).
+
+| Store | Covers | Account | Upload | Notes |
+|---|---|---|---|---|
+| [Chrome Web Store](https://chrome.google.com/webstore/devconsole) | Chrome, Brave, Vivaldi, Opera (via "Install Chrome Extensions") | 5 USD once | the chrome zip | privacy tab: "does not collect or use data" is not right; tick *Website content* and *Web history*, "sent only to the PhoneBoxSound app on the same computer" |
+| [Microsoft Edge Add-ons](https://partner.microsoft.com/dashboard/microsoftedge) | Edge | free | the chrome zip | same answers |
+| [Firefox Add-ons](https://addons.mozilla.org/developers/addon/submit/) | Firefox (desktop 140+) | free | the firefox zip | choose "On this site"; the data it declares is shown to people at install |
+| [Opera add-ons](https://addons.opera.com/developer/) | Opera | free | the chrome zip | optional: Opera also takes Chrome Web Store extensions |
+
+Use the listing text and the permission explanations below. The privacy policy address:
+https://github.com/pritombarua1/PhoneBoxSound/blob/main/PRIVACY.md
+
+When a listing is live, put its address in `extension/stores.json` (or send it to the maintainer). Every
+PhoneBoxSound from the next release on then shows **Add to Chrome / Firefox / Edge** by itself, and
+offers it whenever it sees that browser playing without the extension. A link set in Settings →
+Player integrations → Store links still wins on that PC.
+
+## Automatic store updates
+
+The extension's version is the app's version, and every release (a `vX.Y.Z` tag) builds it again. Once a
+store's keys are added as repository secrets (GitHub → Settings → Secrets and variables → Actions), the
+release also sends the new version to that store by itself (`.github/workflows/release.yml`). The first
+submission of each store is always made by hand, above; the keys only allow updates.
+
+| Store | Secrets | Where to get them |
+|---|---|---|
+| Firefox | `AMO_JWT_ISSUER`, `AMO_JWT_SECRET` | addons.mozilla.org → Developer Hub → Manage API Keys |
+| Chrome | `CWS_EXTENSION_ID`, `CWS_PUBLISHER_ID`, `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` | the extension's id and publisher id from the developer dashboard; client id, secret and refresh token from a Google Cloud OAuth client with the Chrome Web Store API enabled ([guide](https://github.com/fregante/chrome-webstore-upload-keys)) |
+| Edge | `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY` | Partner Center → Microsoft Edge → Publish API |
+
+Each store still reviews every update before people get it (usually hours to a few days). A store
+without keys is skipped, and a store that refuses an upload never stops the release itself.
+
 ## Adding it by hand
 
 Until a store listing is live, this is how each browser takes it. There is a short video of these steps:

@@ -4,6 +4,13 @@
 #                           commit, then:  git tag v3.2.0 && git push origin v3.2.0
 #   Try the build only:     Actions → Release → Run workflow (nothing is published)
 #
+# The browser extension goes to the stores with each release once their keys are added as repository
+# secrets (Settings → Secrets and variables → Actions). A store without keys is skipped, and a store that
+# refuses an upload never stops the release. See extension/README.md, "Automatic store updates".
+#   Firefox (addons.mozilla.org):  AMO_JWT_ISSUER, AMO_JWT_SECRET
+#   Chrome Web Store:              CWS_EXTENSION_ID, CWS_PUBLISHER_ID, CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN
+#   Microsoft Edge Add-ons:        EDGE_PRODUCT_ID, EDGE_CLIENT_ID, EDGE_API_KEY
+#
 name: Release
 
 on:
@@ -17,6 +24,10 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+      EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
     steps:
       - uses: actions/checkout@v5
 
@@ -78,3 +89,33 @@ jobs:
           $files = Get-ChildItem out -Exclude notes.md | ForEach-Object { $_.FullName }
           $title = "PhoneBoxSound " + "${{ github.ref_name }}".TrimStart("v")
           gh release create "${{ github.ref_name }}" @files --title $title --notes-file out/notes.md --latest
+
+      - name: Extension to Firefox (addons.mozilla.org)
+        if: startsWith(github.ref, 'refs/tags/v') && env.AMO_JWT_ISSUER != ''
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Expand-Archive release/PhoneBoxSound-extension-firefox.zip ext-firefox
+          npx --yes web-ext@10 sign --channel listed --source-dir ext-firefox --artifacts-dir ext-signed `
+            --api-key "${{ secrets.AMO_JWT_ISSUER }}" --api-secret "${{ secrets.AMO_JWT_SECRET }}" --approval-timeout 0
+
+      - name: Extension to the Chrome Web Store
+        if: startsWith(github.ref, 'refs/tags/v') && env.CWS_REFRESH_TOKEN != ''
+        continue-on-error: true
+        env:
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: npx --yes chrome-webstore-upload-cli@4 --source release/PhoneBoxSound-extension-chrome.zip
+
+      - name: Extension to Microsoft Edge Add-ons
+        if: startsWith(github.ref, 'refs/tags/v') && env.EDGE_API_KEY != ''
+        continue-on-error: true
+        uses: wdzeng/edge-addon@v2
+        with:
+          product-id: ${{ secrets.EDGE_PRODUCT_ID }}
+          zip-path: release/PhoneBoxSound-extension-chrome.zip
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
+          api-key: ${{ secrets.EDGE_API_KEY }}

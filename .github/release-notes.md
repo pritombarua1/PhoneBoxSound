@@ -10,4 +10,4 @@ Windows may show "Windows protected your PC" for a new program: choose **More in
 
 Built, tested and published automatically from this repository's source code by GitHub Actions. The first start shows the terms once; full text: [DISCLAIMER.md](https://github.com/pritombarua1/PhoneBoxSound/blob/main/DISCLAIMER.md).
 
-Copyright (C) 2026 Pritom Barua · GNU GPL v3 or later ([NOTICE.md](https://github.com/pritombarua1/PhoneBoxSound/blob/main/NOTICE.md)) · provided as is, without warranty.
+Copyright (C) 2026 Pritom Barua · free for non-commercial use, commercial use needs a licence ([NOTICE.md](https://github.com/pritombarua1/PhoneBoxSound/blob/main/NOTICE.md)) · provided as is, without warranty.

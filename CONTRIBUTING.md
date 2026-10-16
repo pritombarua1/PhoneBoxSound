@@ -1,6 +1,8 @@
 # Contributing
 
-Thanks for helping! The short version:
+Thanks for helping! By sending a contribution you agree that it is published under the project's licence
+(PolyForm Noncommercial 1.0.0, see NOTICE.md) and that Pritom Barua may also license it under other terms,
+including commercial licences. The short version:
 
 ```
 npm install        # web dependencies
