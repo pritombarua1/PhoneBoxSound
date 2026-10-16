@@ -1,0 +1,55 @@
+# Every push and pull request: the unit tests, a type-checked build of the web app, the load test
+# (simulated phones) and the screen-view check (the sound must not suffer while the screen is shown),
+# on GitHub's own Windows machines.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: |
+          npm ci --no-fund --no-audit
+          python -m pip install --disable-pip-version-check --require-hashes -r requirements-lock.txt
+
+      - name: Unit tests
+        run: python -m pytest tests -q
+
+      - name: Build the web app (type-checked)
+        run: npm run build
+
+      - name: Load test (1, 10, 30 and 50 simulated phones)
+        run: python scripts/loadtest.py --phones 1 10 30 50 --seconds 15 --json loadtest.json
+
+      - name: Screen view must not disturb the sound (busy screen, slow phone, 4 and 20 Mbit/s links)
+        run: |
+          node scripts/screencheck.mjs --busy --cpu 2 --mbps 4
+          node scripts/screencheck.mjs --busy --cpu 1 --mbps 20
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: measurements
+          path: loadtest.json

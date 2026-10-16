@@ -9,6 +9,7 @@ import base64
 import ctypes
 import hashlib
 import io
+import os
 import logging
 import sys
 import time
@@ -236,6 +237,11 @@ class DemoDesktop(Desktop):
         d.polygon([(x0 + 380, y1 - 70), (x0 + 640, y0 + 200), (x1 - 24, y1 - 70)], fill=(18, 48, 36))
         d.rounded_rectangle((x0 + 24, y1 - 46, x1 - 24, y1 - 40), 3, fill=(60, 80, 72))
         d.rounded_rectangle((x0 + 24, y1 - 46, x0 + 24 + int((x1 - x0 - 48) * ((time.time() % 60) / 60)), y1 - 40), 3, fill=(88, 207, 154))
+        if os.environ.get("PHONEBOXSOUND_DEMO_BUSY_SCREEN"):
+            # tests: a "video" full of detail, as heavy to send as a real busy screen (photos, films, games)
+            import numpy as np
+            noise = (np.random.default_rng().random((y1 - 70 - (y0 + 60), x1 - 24 - (x0 + 24), 3)) * 255).astype("uint8")
+            img.paste(Image.fromarray(noise), (x0 + 24, y0 + 60))
         return _jpeg(img, max_width, quality), self.cursor[0], self.cursor[1]
 
 

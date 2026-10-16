@@ -80,6 +80,7 @@ class Client:
         self.screen_key = secrets.token_urlsafe(18)  # lets this phone open the separate connection for screen pictures
         self.screen_ws = None
         self.screen_ack = asyncio.Event()
+        self.screen_strain = 0.0     # when the phone last said its sound was arriving with too little time to spare
         self.screen_ms = None
         self.link_since = (None, time.time())        # (level, since when)
         self.auto_saver = False
@@ -188,6 +189,12 @@ class Client:
         rtt, jitter, late = s.get("rtt_ms"), s.get("jitter_ms") or 0, s.get("late_recent") or 0
         if rtt is None or time.time() - self.last_msg > 6:
             return "unknown"
+        if self.screen_mode:
+            # pictures share the air while the screen is shown, which makes packets arrive unevenly by design
+            # (the sound goes first, the pictures wait). Judge by what can be heard: sound arriving too late.
+            if late > 3 or s.get("far"):
+                return "poor"
+            return "weak" if late > 0 else "good"
         if rtt > 150 or jitter > 70 or late > 3 or s.get("far"):
             return "poor"
         if rtt > 60 or jitter > 35 or late > 0:
@@ -656,20 +663,34 @@ class Hub:
     SCREEN_LADDER = ((1280, 55), (1120, 50), (960, 44), (800, 40), (640, 36), (520, 32))
 
     async def _screen_loop(self, c):
-        """Screen view for one phone.
+        """Screen view for one phone. The sound always comes first; the picture gets what is left.
 
-        Pictures travel on their own connection (/ws/screen), never on the one that carries the sound: a
-        150 kB picture in front of the audio used to hold the audio up for as long as it took to send.
-        One picture is in flight at a time: the next is only made when the phone has confirmed the last,
-        so nothing queues up, and the time each took decides how heavy the next may be."""
+        Pictures travel on their own connection (/ws/screen), never on the one that carries the sound,
+        and one picture is in flight at a time: the next is made only when the phone has drawn the last.
+        That alone is not enough on a weak link: Wi-Fi delivers everything to the phone through one queue
+        at the router, so a 100 kB picture sent in one go makes every sound block behind it wait. So:
+
+        - a picture leaves in small slices with pauses in between, using at most half of what this phone's
+          link has been measured to carry; sound blocks (every 10 ms) slip through between the slices;
+        - the phone says "strain" the moment sound arrives with too little time to spare, and pictures
+          then pause, shrink and slow down at once (c.screen_strain);
+        - pictures get lighter when they are slow, and sharper again only after a calm stretch."""
         from .desktop import frame_hash
-        last, seq, level, quick = None, 0, 1, 0
+        last, seq, level, quick = None, 0, 3, 0
+        rate = 100_000.0          # bytes per second the pictures may use: start gentle, grow while the sound is calm
         enc = lambda v: 65535 if v < 0 else int(max(0.0, min(1.0, v)) * 65534)
         try:
             while c.screen_mode and self.clients.get(c.id) is c and c.perms.get("screen"):
                 started = time.time()
                 ws = c.screen_ws
                 suffering = len(c.audio) >= 8 or (c.stats.get("late_recent") or 0) > 2
+                strained = time.time() - c.screen_strain < 1.5
+                if strained:
+                    level = min(level + 1, len(self.SCREEN_LADDER) - 1)
+                    rate = max(40_000.0, rate * 0.6)
+                    c.screen_strain = 0.0
+                    await asyncio.sleep(1.0)          # give the sound the whole link for a moment
+                    continue
                 if ws is None and (c.frame is not None or suffering):
                     await asyncio.sleep(0.12)          # old app without the picture connection: wait for it to catch up
                     continue
@@ -679,14 +700,23 @@ class Hub:
                 took = 0.0
                 if h != last:
                     last, seq = h, seq + 1
-                    frame = HEADER.pack(KIND_SCREEN, 0, enc(cx), seq & 0xFFFFFFFF, 0.0, enc(cy), 0) + jpg
                     if ws is None:
-                        c.send_frame(frame)
+                        c.send_frame(HEADER.pack(KIND_SCREEN, 0, enc(cx), seq & 0xFFFFFFFF, 0.0, enc(cy), 0) + jpg)
                     else:
+                        # slices small enough to cross the link in ~12 ms each, sent at most at half its speed
+                        piece = int(max(4_000, min(16_000, rate * 2 * 0.012)))
+                        parts = [jpg[k:k + piece] for k in range(0, len(jpg), piece)] or [b""]
+                        count = len(parts)
                         sent = time.time()
                         c.screen_ack.clear()
                         try:
-                            await ws.send_bytes(frame)
+                            for idx, part in enumerate(parts):
+                                flags = 0 if count == 1 else ((count << 16) | idx)
+                                await ws.send_bytes(HEADER.pack(KIND_SCREEN, 0, enc(cx), seq & 0xFFFFFFFF, 0.0, enc(cy), flags) + part)
+                                if idx < count - 1:
+                                    await asyncio.sleep(len(part) / rate)
+                                if time.time() - c.screen_strain < 0.2:
+                                    break                         # the sound is suffering: stop this picture here
                             await asyncio.wait_for(c.screen_ack.wait(), 2.0)
                         except asyncio.TimeoutError:
                             pass
@@ -695,19 +725,22 @@ class Hub:
                             continue
                         took = time.time() - sent
                         if self.journal:
-                            self.journal.count(c.device_id, "screen_out", len(frame))
+                            self.journal.count(c.device_id, "screen_out", len(jpg))
                         c.screen_ms = round(took * 1000)
+                        # a little faster after each calm picture; much slower the moment the sound strains (above)
+                        if time.time() - c.screen_strain > 3:
+                            rate = min(1_500_000.0, rate * 1.08)
                         # lighter when a picture is slow or the sound is struggling; sharper after a calm stretch
-                        if took > 0.16 or suffering:
+                        if took > 0.25 or suffering:
                             level, quick = min(level + 1, len(self.SCREEN_LADDER) - 1), 0
-                        elif took < 0.05:
+                        elif took < 0.08:
                             quick += 1
-                            if quick >= 12:
+                            if quick >= 6:
                                 level, quick = max(level - 1, 0), 0
                         else:
                             quick = 0
                 # leave the air free for at least as long as the picture used it: sound comes first
-                await asyncio.sleep(max(0.05, min(0.6, took * 1.5), 0.11 - (time.time() - started)))
+                await asyncio.sleep(max(0.05, min(0.6, took * 0.5), 0.11 - (time.time() - started)))
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -1065,6 +1098,9 @@ class Hub:
         elif t == "input" and c.perms["input"]:
             c.outcome = self.do_input(m)
             self.keyboard_hint(c, m)
+        elif t == "strain":
+            c.screen_strain = time.time()       # pictures make way for the sound at once
+            c.outcome = "noted"
         elif t == "kbd_watch":
             c.kbd_watch = bool(m.get("on")) and bool(c.perms["input"])
             c.kbd_over = None
@@ -2118,7 +2154,10 @@ class Hub:
         needs = [c.stats["need_ms"] for c in self.clients.values()
                  if c.dev["speaker"] and c.perms["speaker"] and isinstance(c.stats.get("need_ms"), (int, float))
                  and c.stats.get("played", 0) > 300 and not c.stats.get("hidden")
-                 and 0 < c.stats["need_ms"] < 2000 and c.stats.get("rtt_ms", 0) < 400]
+                 and 0 < c.stats["need_ms"] < 2000 and c.stats.get("rtt_ms", 0) < 400
+                 # a phone showing the PC screen measures the pictures' traffic too; it is protected by the
+                 # pictures making way (see _screen_loop), and must not delay every phone's sound for them
+                 and not getattr(c, "screen_mode", None)]
         if not needs:
             return
         target = int(clamp(max(needs) + 25, cfg["min_latency_ms"], cfg["max_latency_ms"]))

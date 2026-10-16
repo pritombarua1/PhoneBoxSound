@@ -68,11 +68,13 @@ export default memo(function Touchpad() {
   useEffect(() => {
     if (view === "off" || !canView) { send({ t: "screen", mode: null }); screenLink(false); return; }
     let url = "";
-    screenView.onFrame = (jpeg, cx, cy) => {
+    screenView.onFrame = (jpeg, cx, cy, done) => {
       const next = URL.createObjectURL(jpeg), old = url;
       url = next;
-      const im = img.current; if (!im) return;
+      const im = img.current; if (!im) { done(); return; }
+      im.onerror = done;
       im.onload = () => {
+        done();                                   // drawn: the PC may send the next picture
         if (old) URL.revokeObjectURL(old);
         const p = pad.current, b = box.current; if (!p || !b) return;
         const ar = im.naturalWidth / im.naturalHeight, pw = p.clientWidth, ph = p.clientHeight;

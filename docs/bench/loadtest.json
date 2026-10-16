@@ -1,0 +1,49 @@
+{
+ "when": "2026-10-16 14:53",
+ "rounds": [
+  {
+   "phones": 1,
+   "seconds": 18.0,
+   "connected": 1,
+   "blocks_per_phone_per_s": 100.1,
+   "loss_pct_max": 0,
+   "jitter_p99_ms_worst": 0.55,
+   "headroom_min_ms": 138.3,
+   "clock_rtt_p50_ms": 0.32,
+   "errors": []
+  },
+  {
+   "phones": 10,
+   "seconds": 18.0,
+   "connected": 10,
+   "blocks_per_phone_per_s": 100.1,
+   "loss_pct_max": 0,
+   "jitter_p99_ms_worst": 0.62,
+   "headroom_min_ms": 132.2,
+   "clock_rtt_p50_ms": 0.35,
+   "errors": []
+  },
+  {
+   "phones": 30,
+   "seconds": 18.0,
+   "connected": 30,
+   "blocks_per_phone_per_s": 100.1,
+   "loss_pct_max": 0,
+   "jitter_p99_ms_worst": 0.82,
+   "headroom_min_ms": 116.9,
+   "clock_rtt_p50_ms": 0.59,
+   "errors": []
+  },
+  {
+   "phones": 50,
+   "seconds": 18.0,
+   "connected": 50,
+   "blocks_per_phone_per_s": 100.1,
+   "loss_pct_max": 0,
+   "jitter_p99_ms_worst": 0.95,
+   "headroom_min_ms": 87.9,
+   "clock_rtt_p50_ms": 0.72,
+   "errors": []
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "phoneboxsound",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "description": "Turn phones into synchronised wireless speakers, a media remote and an intercom for your Windows PC.",
   "private": true,
   "type": "module",

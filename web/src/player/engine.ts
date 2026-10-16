@@ -58,7 +58,7 @@ export const phone = createStore({
 });
 
 /** Screen-view frames go straight to whoever is showing them (the touchpad), not through React state. */
-export const screenView = { onFrame: null as ((jpeg: Blob, cx: number, cy: number) => void) | null };
+export const screenView = { onFrame: null as ((jpeg: Blob, cx: number, cy: number, done: () => void) => void) | null };
 
 let deviceId = store.get("pbs.device");
 let token = store.get("pbs.token");
@@ -140,13 +140,16 @@ const serverToCtx = (ms: number) => (ms - clock.offset) / 1000 + (ctxMinusPerf ?
 
 let nextTime = 0, rate = 1, lastSeq = 0, lastAudioAt = 0;
 export const meter = { level: 0 };   // read by the orb animation each frame
-const stats = { late: 0, resyncs: 0, played: 0, gaps: 0, far: 0, lateWindow: [] as number[] };
+const stats = { late: 0, resyncs: 0, played: 0, gaps: 0, far: 0, unsynced: 0, lateWindow: [] as number[] };
+let lastStrain = 0;
+(window as any).__pbsAudio = { stats, clock: () => ({ synced: clock.synced, jumps: (clock as any).jumps ?? 0, rtt: (clock as any).rtt ?? 0 }) };   // for the tests
 const slack = new Float32Array(1000); let slackN = 0;
 const transit = new Float32Array(500); let transitN = 0;
 
 function onProgram(p: Packet) {
   const c = ctx, k = cfg();
-  if (!c || !clock.synced || !k.streaming || !k.speaker) return;
+  if (!c || !k.streaming || !k.speaker) return;
+  if (!clock.synced) { stats.unsynced++; return; }      // the clock is being measured again: this block is not heard
   if (lastSeq && p.seq !== lastSeq + 1) stats.gaps++;
   lastSeq = p.seq; lastAudioAt = performance.now();
   transit[transitN++ % transit.length] = clock.serverNow() - p.ts;
@@ -161,6 +164,10 @@ function onProgram(p: Packet) {
     return;
   }
   slack[slackN++ % slack.length] = (target - now) * 1000;
+  if (screenSock && (target - now) * 1000 < Math.max(40, k.latency_ms * 0.45)) {
+    const t = performance.now();
+    if (t - lastStrain > 300) { lastStrain = t; send({ t: "strain" }); }     // pictures make way at once
+  }
   let err = nextTime - target;
   if (!nextTime || Math.abs(err) > 0.04) { nextTime = target; err = 0; stats.resyncs++; }
   if (nextTime < now + 0.003) { stats.late++; stats.lateWindow.push(performance.now()); nextTime = 0; return; }
@@ -231,7 +238,7 @@ function connect() {
       const p = parsePacket(e.data);
       if (p.kind === 0) onProgram(p);
       else if (p.kind === 1) { ensureAudio(); icPlayer!.play(p); }
-      else if (p.kind === 2) screenView.onFrame?.(new Blob([e.data.slice(24)], { type: "image/jpeg" }), p.frames === 65535 ? -1 : p.frames / 65534, p.sr === 65535 ? -1 : p.sr / 65534);
+      else if (p.kind === 2) screenView.onFrame?.(new Blob([e.data.slice(24)], { type: "image/jpeg" }), p.frames === 65535 ? -1 : p.frames / 65534, p.sr === 65535 ? -1 : p.sr / 65534, () => {});
       return;
     }
     const m = JSON.parse(e.data);
@@ -695,11 +702,27 @@ export function screenLink(on: boolean) {
   if (screenSock && screenSock.readyState <= 1) return;
   const sock = new WebSocket(wsUrl(`/ws/screen?k=${encodeURIComponent(key)}`));
   sock.binaryType = "arraybuffer";
+  // A picture may come in slices (the PC paces them so the sound slips through in between). Put it
+  // back together, and say "ok" only once it is on screen: the PC sends the next one after that.
+  let parts: ArrayBuffer[] = [], partsOf = -1;
+  const ack = () => { if (sock.readyState === 1) sock.send("ok"); };
   sock.onmessage = (e) => {
     if (typeof e.data === "string") return;
     const p = parsePacket(e.data);
-    if (p.kind === 2) screenView.onFrame?.(new Blob([e.data.slice(24)], { type: "image/jpeg" }), p.frames === 65535 ? -1 : p.frames / 65534, p.sr === 65535 ? -1 : p.sr / 65534);
-    if (sock.readyState === 1) sock.send("ok");
+    if (p.kind !== 2) return;
+    const count = p.flags >>> 16, idx = p.flags & 0xffff;
+    if (count > 1) {
+      if (p.seq !== partsOf) { parts = []; partsOf = p.seq; }
+      parts[idx] = e.data.slice(24);
+      if (parts.filter(Boolean).length < count) return;
+    } else parts = [e.data.slice(24)];
+    const jpeg = new Blob(parts, { type: "image/jpeg" });
+    parts = []; partsOf = -1;
+    let acked = false;
+    const done = () => { if (!acked) { acked = true; ack(); } };
+    setTimeout(done, 1500);                 // never let a lost "drawn" stop the pictures
+    if (screenView.onFrame) screenView.onFrame(jpeg, p.frames === 65535 ? -1 : p.frames / 65534, p.sr === 65535 ? -1 : p.sr / 65534, done);
+    else done();
   };
   sock.onclose = () => { if (screenSock === sock) screenSock = null; };
   screenSock = sock;

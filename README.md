@@ -5,6 +5,10 @@ a media remote and an intercom for your Windows PC. Phones just open a web page:
 
 No cloud · no account · no app install · local network only · GPL-3.0 · by Pritom Barua
 
+[![Tests](https://github.com/pritombarua1/PhoneBoxSound/actions/workflows/tests.yml/badge.svg)](https://github.com/pritombarua1/PhoneBoxSound/actions/workflows/tests.yml)
+[![Release](https://img.shields.io/github/v/release/pritombarua1/PhoneBoxSound)](https://github.com/pritombarua1/PhoneBoxSound/releases/latest)
+[![Licence: GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue)](NOTICE.md)
+
 ![Dashboard](docs/screens/dashboard.png)
 
 <p align="center">
@@ -35,11 +39,6 @@ You need a Windows 10 or 11 PC and phones on the same Wi-Fi. Nothing is installe
 [Releases page](https://github.com/pritombarua1/PhoneBoxSound/releases/latest), download
 `PhoneBoxSound-win64.zip`, unzip it anywhere and double-click `PhoneBoxSound.exe`. Everything it needs is
 inside; nothing else is downloaded or installed.
-
-**Code signing:** Windows releases are built by GitHub Actions and signed through the
-[SignPath Foundation](https://signpath.org): free code signing provided by [SignPath.io](https://signpath.io),
-certificate by SignPath Foundation. Until the project's application is approved, releases are unsigned and the
-release notes say so. See the [code signing policy](CODE_SIGNING.md) and the [privacy policy](PRIVACY.md).
 
 **From the source code: double-click `start.bat`.** It sets up whatever is missing by itself, once:
 
@@ -86,9 +85,56 @@ one from its **More** tab.
 | `npm test` | Python unit tests |
 | `npm run package` | Standalone Windows build: `release/PhoneBoxSound-win64.zip` (needs `pip install -r requirements-dev.txt`) |
 | `npm run docs` | Regenerate screenshots, videos and the PDF. Also the end-to-end test (150+ checks with real multi-touch on the touchpad) |
+| `python scripts/loadtest.py` | Load test: 1, 10, 30 and 50 simulated phones; loss, jitter and time to spare per phone |
+| `node scripts/screencheck.mjs` | Checks that screen view never disturbs the sound (`--busy`, `--mbps 4`, `--cpu 2` for harsher conditions) |
+| `npm run docs:videos` | Re-record the guided tour and the extension video from the current screenshots |
 
 Server options: `python -m phoneboxsound --help` (`--port`, `--no-https`, `--no-tray`, `--demo`, `--test`, `--config`…).
 Environment: `PHONEBOXSOUND_PORT`, `PHONEBOXSOUND_HTTPS_PORT`, `PHONEBOXSOUND_BUFFER_MS`, `PHONEBOXSOUND_API_TOKEN`, `PHONEBOXSOUND_CONFIG`.
+
+## Engineering highlights
+
+- **Sample-exact sync over Wi-Fi.** The PC's sound is captured with WASAPI loopback in 10 ms blocks, each
+  stamped with the PC's clock. Every phone measures its own offset to that clock (fast round trips only,
+  thrown away as soon as fresh ones disagree) and schedules each block for an exact sample on its audio
+  clock. Drift is absorbed by a ±0.4% playback-rate nudge, never by a jump.
+- **The sound always goes first.** Screen view travels on its own connection, in small paced slices that use
+  at most what the sound leaves free. The phone says "strain" the moment sound arrives with too little time
+  to spare, and pictures pause and shrink at once. Measured below.
+- **Security a phone cannot talk its way past.** Each phone makes its own ECDSA P-256 key in the browser
+  (never leaves it) and signs a challenge to get in; new phones wait for approval; every PC-reaching
+  ability is off until switched on, checked on the PC for every message; lockdown, DNS-rebinding and
+  origin checks, strict CSP. Settings are stored encrypted (AES-256-GCM, scrypt) once a password is set.
+- **A record you can replay.** Two days per phone, to the millisecond: every request, what the PC did with
+  it, and a screen replay rebuilt from the phone's own page snapshots.
+- **Built and checked by machines.** Unit tests, a 158-check end-to-end run with real multi-touch, a load
+  test and the screen-view check run on GitHub's Windows machines for every change; releases are built
+  there from source with exact, checksummed dependencies.
+
+### Measured
+
+**Many phones** (`python scripts/loadtest.py`: simulated phones on the same PC, 20 s each):
+
+| Phones | Blocks lost | Arrival unevenness (p99) | Time to spare before playing (worst) | Clock round trip |
+|---|---|---|---|---|
+| 1 | 0 % | 0.55 ms | 138 ms | 0.3 ms |
+| 10 | 0 % | 0.62 ms | 132 ms | 0.4 ms |
+| 30 | 0 % | 0.82 ms | 117 ms | 0.6 ms |
+| 50 | 0 % | 0.95 ms | 88 ms | 0.7 ms |
+
+**Screen view against the sound** (`node scripts/screencheck.mjs`: a phone with a 2× slower processor
+watching a detailed, fast-changing screen through a simulated Wi-Fi link, 15 s, counted from the first
+second):
+
+| Link | Sound late | Playback jumps | Sync buffer | Pictures per second |
+|---|---|---|---|---|
+| 3 Mbit/s (weak) | 0 | 0 | unchanged | 3.5 |
+| 6 Mbit/s | 0 | 0 | unchanged | 5.5 |
+| 20 Mbit/s | 0 | 0 | unchanged | 5.6 |
+| 50 Mbit/s (simple screen) | 0 | 0 | unchanged | 8.3 |
+
+These run on one PC, so they measure PhoneBoxSound itself; a real home network adds its own delays, which
+the sync buffer is there to absorb.
 
 ## What it does
 
@@ -392,11 +438,11 @@ you listen on. Bluetooth and USB headsets add their own delay; the fine offset c
   the PC *is* the centre, and the notice says so.
 - A phone whose link stays poor is moved to the lighter stream (half the data) and back by itself.
 - The Devices page shows each phone's share and the total Wi-Fi load (1.5 Mbit/s per phone at full quality).
-- The PC-screen view travels on its own connection, one confirmed picture at a time, lighter when the link
-  is slow, so pictures can no longer hold up the sound.
-
-## Around the house
-
+- The PC-screen view travels on its own connection, one picture at a time, sent in small paced slices
+  that use at most what the sound leaves free. When sound starts arriving with little time to spare, the
+  phone says so and pictures pause and get lighter at once; they get sharper again while the sound stays
+  calm. A phone showing the screen never makes the PC raise everyone's sync buffer, and its connection is
+  judged by late sound only, so pictures never trigger "come closer" or the lighter stream.
 - **Bedtime** (Presets, or the All speakers panel on a phone): every phone fades to silence over 15 to 90
   minutes, then the player pauses, and optionally the PC locks, sleeps or shuts down.
   `POST /api/bedtime {"minutes":30,"after":"shutdown"}`.
@@ -517,8 +563,8 @@ Copyright (C) 2026 Pritom Barua. Free software under the **GNU General Public Li
   a link here, publish your full source under the same licence, and use a different name and logo.
   It may not be turned into a closed-source product.
 
-**Releases** are built, tested and published automatically from this source code by GitHub Actions;
-see the [code signing policy](CODE_SIGNING.md).
+**Releases** are built, tested and published automatically from this source code by GitHub Actions.
+Privacy: [PRIVACY.md](PRIVACY.md) (nothing is collected).
 
 **Citing it:** use the *Cite this repository* button on the right of the GitHub page
 ([CITATION.cff](CITATION.cff)).

@@ -1,0 +1,9 @@
+# What the Windows release is built from. requirements-lock.txt pins every package (and every package
+# they need) to an exact version with checksums, so each build uses exactly the same, verified files.
+# After changing requirements.txt, refresh the lock:
+#   python -m pip install pip-tools
+#   python -m piptools compile --generate-hashes --allow-unsafe --strip-extras --output-file requirements-lock.txt requirements-build.in
+-r requirements.txt
+pytest
+pyinstaller
+setuptools<81

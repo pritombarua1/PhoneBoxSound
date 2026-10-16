@@ -1146,3 +1146,53 @@ def test_the_running_number_never_hides_what_a_message_says():
         c.sender.cancel()
     asyncio.run(run())
     assert sent[0]["s"] == 123456.5 and sent[1]["q"] == "night drive" and [m["#"] for m in sent] == [1, 2]
+
+
+def test_screen_view_never_counts_as_bad_wifi():
+    """While a phone shows the PC screen, pictures make its packets arrive unevenly by design; only sound
+    arriving late may call its connection weak (that is what would switch it to the lighter stream)."""
+    from phoneboxsound.hub import Client
+
+    class FakeWs:
+        async def send_bytes(self, b):
+            pass
+
+        async def send_str(self, s):
+            pass
+
+    async def run():
+        c = Client(FakeWs(), "d", {"perms": {}, "speaker": True}, "10.0.0.2", False)
+        c.last_msg = time.time()
+        c.stats = {"rtt_ms": 180, "jitter_ms": 90, "late_recent": 0}
+        before = c.link()
+        c.screen_mode = "screen"
+        during = c.link()
+        c.stats["late_recent"] = 5
+        late = c.link()
+        c.sender.cancel()
+        return before, during, late
+
+    before, during, late = asyncio.run(run())
+    assert before == "poor"          # without the screen, that much unevenness is a bad link
+    assert during == "good"          # with it, it is the pictures: the sound is fine
+    assert late == "poor"            # but sound arriving late is always bad
+
+
+def test_a_phone_showing_the_screen_does_not_raise_everyones_buffer(tmp_path):
+    hub = make_hub(tmp_path)
+    hub.cfg["auto_latency"] = True
+    hub.cfg["latency_ms"] = 200
+
+    class C:
+        def __init__(self, need, screen):
+            self.dev, self.perms = {"speaker": True}, {"speaker": True}
+            self.stats = {"need_ms": need, "played": 1000, "rtt_ms": 5}
+            self.screen_mode = screen
+
+    hub.clients = {"a": C(150, None), "b": C(600, "screen")}
+    hub.push_config = lambda *a, **k: None
+    asyncio.run(hub.auto_latency_tick())
+    assert hub.cfg["latency_ms"] == 200          # the 600 ms the screen viewer asked for is not given to everyone
+    hub.clients["b"].screen_mode = None
+    asyncio.run(hub.auto_latency_tick())
+    assert hub.cfg["latency_ms"] == min(625, hub.cfg["max_latency_ms"])   # without the screen, a phone that needs more gets it (up to the ceiling)
