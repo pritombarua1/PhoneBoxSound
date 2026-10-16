@@ -170,8 +170,10 @@ class Video:
                 return self.encoder
             self.encoder, self.error = None, None
             path, _ = self.ffmpeg()
+            only = os.environ.get("PHONEBOXSOUND_VIDEO_ENCODERS")     # tests: "none", or e.g. "h264_mf,libopenh264"
+            candidates = [e for e in ENCODERS if only is None or e[0] in only.split(",")]
             if path:
-                for enc in ENCODERS:
+                for enc in candidates:
                     ok = await asyncio.to_thread(self._try, enc)
                     if ok:
                         self.encoder = enc
@@ -187,7 +189,7 @@ class Video:
         at = cmd.index("-an")
         cmd[at:at] = ["-frames:v", "8"]
         try:
-            r = subprocess.run(cmd, capture_output=True, timeout=12, creationflags=NO_WINDOW)
+            r = subprocess.run(cmd, capture_output=True, timeout=5, creationflags=NO_WINDOW)
             return r.returncode == 0 and r.stdout.count(b"\x00\x00\x00\x01\x09") >= 4
         except Exception:
             return False

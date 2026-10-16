@@ -632,6 +632,8 @@ def build_app(hub, args):
                 if msg.type == WSMsgType.TEXT:
                     if msg.data == "key":
                         c.screen_need_key = True    # the phone's video decoder lost track
+                    elif msg.data == "novideo":
+                        c.screen_video = False      # this phone cannot play the stream: pictures from now on
                     else:
                         c.screen_acks += 1
                         c.screen_ack.set()          # "shown": the next picture may be made
@@ -777,7 +779,7 @@ def build_app(hub, args):
         return web.json_response({"version": __version__, "streaming": s["cfg"]["streaming"],
                                   "latency_ms": s["cfg"]["latency_ms"], "capture": s["capture"],
                                   "devices_online": sum(d["online"] for d in s["devices"]), "code": hub.code,
-                                  "urls": [hub.http_url(ip) for ip in hub.ips]})
+                                  "urls": [hub.http_url(ip) for ip in hub.ips], "video": s.get("video")})
 
     @routes.get("/api/devices")
     @api

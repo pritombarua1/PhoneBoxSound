@@ -106,14 +106,16 @@ try {
     d.buffer = `${bufA}→${bufB} ms`;
     d.link = [...levels].join("/") || "?";
     d.frames = b.frames;
-    d.mode = await page.evaluate(() => (window.__pbsVideoFrames || 0) > 0 ? "video" : "pictures"); d.fps = +(b.frames / SECONDS).toFixed(1); d.rtt = Math.round(b.rtt);
+    d.mode = await page.evaluate(() => (window.__pbsVideoFrames || 0) > 0 ? "video" : "pictures");
+    const vs = (await api("/api/status")).video;
+    d.encoder = vs ? (vs.encoder || (vs.checked ? `none (${vs.error || "no encoder"})` : "still checking")) : "-"; d.fps = +(b.frames / SECONDS).toFixed(1); d.rtt = Math.round(b.rtt);
     return d;
   };
   console.log(`${process.argv.includes("--video") ? "VIDEO, " : ""}${process.argv.includes("--busy") ? "busy screen, " : ""}phone CPU ${CPU}x slower, ${MBPS ? `Wi-Fi link ${MBPS} Mbit/s` : "no link limit"}, ${SECONDS} s per run`);
   const off = await phase("off");
   const on = await phase("screen");
   for (const [name, r] of [["screen off", off], ["screen on", on]])
-    console.log(`${name.padEnd(11)} played ${String(r.played).padStart(5)}  late ${String(r.late).padStart(3)}  unsynced ${String(r.unsynced).padStart(4)}  resyncs ${String(r.resyncs).padStart(3)}  clock jumps ${r.jumps}  clock rtt ${r.rtt} ms  buffer ${r.buffer}  link ${r.link}` + (name === "screen on" ? `  ${r.mode} ${r.frames} (${r.fps}/s)` : ""));
+    console.log(`${name.padEnd(11)} played ${String(r.played).padStart(5)}  late ${String(r.late).padStart(3)}  unsynced ${String(r.unsynced).padStart(4)}  resyncs ${String(r.resyncs).padStart(3)}  clock jumps ${r.jumps}  clock rtt ${r.rtt} ms  buffer ${r.buffer}  link ${r.link}` + (name === "screen on" ? `  ${r.mode} ${r.frames} (${r.fps}/s)${process.argv.includes("--video") ? `  encoder ${r.encoder}` : ""}` : ""));
   const jsonAt = process.argv.indexOf("--json");
   if (jsonAt > 0) fs.writeFileSync(process.argv[jsonAt + 1], JSON.stringify({ when: new Date().toISOString(), video: process.argv.includes("--video"), busy: process.argv.includes("--busy"), cpu: CPU, mbps: MBPS, seconds: SECONDS, off, on }, null, 1));
   const bad = on.late + on.unsynced + on.jumps + Math.max(0, on.resyncs - 1) + (/weak|poor/.test(on.link) && !/weak|poor/.test(off.link) ? 1 : 0);

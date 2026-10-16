@@ -730,20 +730,27 @@ export function screenLink(on: boolean) {
   let parts: ArrayBuffer[] = [], partsOf = -1;
   const ack = () => { if (sock.readyState === 1) sock.send("ok"); };
   // Video: decoded by the phone's own hardware. A decoder that loses track asks for a full frame ("key").
-  let decoder: any = null, codec = "", needKey = true;
+  let decoder: any = null, codec = "", needKey = true, failures = 0;
   const cursorAt = new Map<number, [number, number]>();
-  const resetDecoder = () => { try { decoder?.close(); } catch { /* closed */ } decoder = null; codec = ""; needKey = true; if (sock.readyState === 1) sock.send("key"); };
+  const resetDecoder = () => {
+    try { decoder?.close(); } catch { /* closed */ }
+    decoder = null; codec = ""; needKey = true;
+    // a phone that cannot decode this stream gets pictures instead: never a blank screen
+    if (sock.readyState === 1) sock.send(++failures >= 3 ? "novideo" : "key");
+  };
   const playVideo = (au: Uint8Array, key: boolean, ts: number, cx: number, cy: number) => {
     if (needKey && !key) return;
     if (key) {
       const c = avcCodec(au);
-      if (c && (!decoder || c !== codec)) {
+      if (!c) { resetDecoder(); return; }
+      if (!decoder || c !== codec) {
         try { decoder?.close(); } catch { /* closed */ }
         const VD = (window as any).VideoDecoder;
         decoder = new VD({
           output: (frame: VideoFrame) => {
             const at = cursorAt.get(frame.timestamp) || [-1, -1];
             cursorAt.delete(frame.timestamp);
+            failures = 0;
             if (screenView.onVideo) screenView.onVideo(frame, at[0], at[1]); else frame.close();
             ack();
           },

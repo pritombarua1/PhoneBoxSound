@@ -781,7 +781,7 @@ class Hub:
         from .audio import HEADER as H
         enc = lambda v: 65535 if v < 0 else int(max(0.0, min(1.0, v)) * 65534)
         from .video import cursor_on_screen
-        kbps, width, seq, sent_count = 1500, 1280, 0, 0
+        kbps, width, seq, sent_count, fresh_starts = 1500, 1280, 0, 0, 0
         calm_since, rate = time.time(), 400_000.0
         while self.video_ok(c):
             fps = 30 if kbps >= 2500 else 24 if kbps >= 900 else 15
@@ -831,6 +831,11 @@ class Hub:
                 return False
             finally:
                 stream.stop()
+            if restart == "key":
+                fresh_starts = fresh_starts + 1 if c.screen_acks == base else 0
+                if fresh_starts >= 3:
+                    log.info("screen video: the phone shows nothing, switching it to pictures")
+                    return False
             if restart == "strain":
                 kbps, rate = max(300, int(kbps * 0.6)), max(100_000.0, rate * 0.6)
                 calm_since = time.time()
