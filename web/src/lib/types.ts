@@ -45,6 +45,7 @@ export interface ServerState {
   };
   capture: { status: string; error: string | null; device: string | null; sample_rate: number | null; devices: string[] };
   devices: DeviceRow[]; pending: PendingRow[]; past: PastRow[]; autostart: boolean; terms_ok: boolean; screen_mode: string | null;
+  transfers: { name: string; who: string; size: number; done: number; speed: number }[];
   video: { available: boolean; encoder: string | null; installed: boolean; source: string | null; checked: boolean; installing: { done: number; total: number } | null; error: string | null; size_mb: number } | null; bedtime: Bedtime | null; pc_out: PcOut | null; spotify: SpotifyStatus; search: SearchStatus; browsers: BrowserLink[]; browser_hint: string[]; extension_urls: { chrome: string; firefox: string; edge: string }; blocked_ips: string[]; media: MediaState; talkers: { name: string; target: string }[]; targets: Target[];
   events: { t: number; kind: string; text: string }[];
   power: { action: string; by: string; seconds: number } | null;

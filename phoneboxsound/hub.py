@@ -506,6 +506,13 @@ class Hub:
         os.makedirs(d, exist_ok=True)
         return d
 
+    @property
+    def transfers(self):
+        if getattr(self, "_transfers", None) is None:
+            from .transfer import Transfers
+            self._transfers = Transfers(self.share_dir, lambda: self.video.ffmpeg()[0] if self.video else None)
+        return self._transfers
+
     def list_files(self):
         d = self.share_dir()
         out = []
@@ -1452,6 +1459,7 @@ class Hub:
             "cfg": cfg, "api_token": self.cfg["api_token"],
             "terms_ok": self.terms_ok(),
             "video": self.video.status() if self.video else None,
+            "transfers": self.transfers.active(),
             "screen_mode": self.clients[self.screen_owner].dev["name"] if self.screen_owner in self.clients else None,
             "capture": {"status": self.capture.status, "error": self.capture.error, "device": self.capture.active_device,
                         "sample_rate": self.sample_rate, "devices": self.capture.devices},
@@ -2379,6 +2387,8 @@ class Hub:
             tick += 1
             if tick % 20 == 0 and self.journal:
                 self.journal.flush()
+            if tick % 20 == 10 and self.controls and getattr(self, "_transfers", None) and self._transfers.uploads:
+                asyncio.ensure_future(self.broadcast_state())     # the dashboard's live list of files coming in
             if self.controls:
                 msg = json.dumps({"t": "levels", "l": round(self.peak[0], 3), "r": round(self.peak[1], 3),
                                   "bands": self.spectrum.bands() if tick % 2 == 0 else None})

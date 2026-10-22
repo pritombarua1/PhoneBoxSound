@@ -444,9 +444,18 @@ try {
     await tapEl("Open notes"); await sleep(500);
     dbg = await api("/api/debug/input?clear=1");
     check("a PC command runs from its phone button", dbg.events.length === 1 && dbg.events[0].kind === "command" && dbg.events[0].run === "notepad.exe", JSON.stringify(dbg.events));
-    await (await p1.$('details input[type="file"][multiple]:not([accept])')).uploadFile(notePath);
-    await p1.waitForSelector("a.item.file", { timeout: 8000 }).catch(() => {});
-    const got = await p1.evaluate(async () => { const a = document.querySelector("a.item.file"); if (!a) return null; const r = await fetch(a.getAttribute("href")); return { name: a.textContent, status: r.status, bytes: (await r.arrayBuffer()).byteLength }; });
+    await p1.evaluate(() => { const f = [...document.querySelectorAll("details.fold")].find((d) => d.textContent.includes("Files & media")); if (f) f.open = true; });
+    await (await p1.$('.xfer input[type="file"]:not([accept])')).uploadFile(notePath);
+    await p1.waitForFunction(() => (window.__pbsTransfers?.() || []).some((j) => /holiday-notes/.test(j.name) && j.state === "done"), { timeout: 15000 }).catch(() => {});
+    await p1.evaluate(() => [...document.querySelectorAll(".xfer .seg button")].find((b) => b.textContent.startsWith("Get from"))?.click());
+    await p1.waitForFunction(() => [...document.querySelectorAll(".xfer-tile")].some((t) => /holiday-notes/.test(t.textContent)), { timeout: 8000 }).catch(() => {});
+    const got = await p1.evaluate(async () => {
+      const t = [...document.querySelectorAll(".xfer-tile")].find((x) => /holiday-notes/.test(x.textContent)); if (!t) return null;
+      const k = window.__pbsFileKey || "";
+      const r = await fetch(`/files/download?path=${encodeURIComponent(t.querySelector(".xfer-name").textContent)}&k=${encodeURIComponent(k)}`);
+      return { name: t.querySelector(".xfer-name").textContent, status: r.status, bytes: (await r.arrayBuffer()).byteLength, k: !!k };
+    });
+    await shot(p1, "phone-files");
     check("a file goes phone → PC and comes back PC → phone", !!got && /holiday-notes/.test(got.name) && got.status === 200 && got.bytes === fs.statSync(notePath).size, JSON.stringify(got));
     await p1.evaluate(() => document.querySelectorAll("details.fold").forEach((d) => { d.open = true; }));
     await sleep(400);

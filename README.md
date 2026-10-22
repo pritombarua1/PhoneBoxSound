@@ -90,6 +90,7 @@ one from its **More** tab.
 | `npm run package` | Standalone Windows build: `release/PhoneBoxSound-win64.zip` (needs `pip install -r requirements-dev.txt`) |
 | `npm run docs` | Regenerate screenshots, videos and the PDF. Also the end-to-end test (150+ checks with real multi-touch on the touchpad) |
 | `python scripts/loadtest.py` | Load test: 1, 10, 30 and 50 simulated phones; loss, jitter and time to spare per phone |
+| `node scripts/transfercheck.mjs` | Files both ways, byte for byte, with a Wi-Fi drop in the middle of a 150 MB video |
 | `node scripts/screencheck.mjs` | Checks that screen view never disturbs the sound (`--video` for the video stream, `--busy`, `--mbps 4`, `--cpu 2` for harsher conditions) |
 | `npm run docs:videos` | Re-record the guided tour and the extension video from the current screenshots |
 
@@ -187,7 +188,13 @@ the sync buffer is there to absorb.
   ready-made shortcuts for editing, browsers and Windows, and your own saved shortcuts.
 - **See better:** a magnifier shows the area around the PC pointer on the phone, enlarged 2–8× and sharp;
   buttons for Windows' own Magnifier and for text size in the active window; a text-size setting for the app.
-- **Files:** send photos and files from the phone into a shared folder on the PC, and download what's in it.
+- **Files & media, both ways:** send any number of photos, videos and files from the phone to the PC exactly as
+  they are (same bytes, same date), each with its percentage, speed and time left, resuming by itself if the
+  Wi-Fi drops or the phone sleeps. Browse the PC's shared folder (and folders in it) with pictures of photos
+  and videos, pick several and download them; on an iPhone, one tap saves them to Photos or Files. The
+  dashboard's **Send files** (Devices) pushes files to one phone, which is told. Transfers make way for the
+  music, and nothing a phone sends can reach outside the shared folder. Checked byte for byte with a 150 MB
+  video and a Wi-Fi drop in the middle: `node scripts/transfercheck.mjs`.
 - **Commands:** buttons for commands you define on the PC ("Open Netflix", a script, a shortcut).
 - **Power:** lock, sleep, restart or shut down the PC. Each asks first; sleep, restart and shut down then
   count down (cancellable from the phone or the dashboard).

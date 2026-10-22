@@ -71,6 +71,9 @@ jobs:
         env:
           PHONEBOXSOUND_VIDEO_ENCODERS: libopenh264,h264_mf
 
+      - name: Files both ways, byte for byte (with a Wi-Fi drop in the middle)
+        run: node scripts/transfercheck.mjs
+
       - name: Results page
         if: always()
         run: node scripts/results.mjs bench

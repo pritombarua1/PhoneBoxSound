@@ -13,7 +13,7 @@ export const PERM_INFO = [
   { key: "screen", label: "Screen view", what: "See the PC's screen (or the active window) live on the phone.", pc: true },
   { key: "power", label: "Power", what: "Lock, sleep, restart or shut down the PC, each after a confirmation and a countdown.", pc: true },
   { key: "manage", label: "Manage speakers", what: "Change every phone's volume, channel and timing, pause all, start the bedtime timer.", pc: true },
-  { key: "files", label: "Files", what: "Send files to the PC's share folder and download what is in it. Nothing outside that folder.", pc: true },
+  { key: "files", label: "Files", what: "Send photos, videos and files to the PC's shared folder, untouched, and browse and download what is in it. Nothing outside that folder.", pc: true },
   { key: "commands", label: "PC commands", what: "Press the command buttons you made in Settings. A phone can never create or change one.", pc: true },
   { key: "host", label: "Host music", what: "Play audio files from this phone on every phone, in place of the PC's sound.", pc: true },
   { key: "approve", label: "Approve phones", what: "Let a waiting phone in, or turn it away, without going to the PC.", pc: true },

@@ -10,8 +10,8 @@ authors:
 repository-code: "https://github.com/pritombarua1/PhoneBoxSound"
 url: "https://github.com/pritombarua1/PhoneBoxSound"
 license: PolyForm-Noncommercial-1.0.0
-version: "3.3.0"
-date-released: "2026-10-16"
+version: "3.4.0"
+date-released: "2026-10-22"
 keywords:
   - audio
   - synchronised playback

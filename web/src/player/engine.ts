@@ -46,7 +46,8 @@ export const phone = createStore({
   online: true,
   synced: false,
   tapOver: false,
-  pcText: { over: false, focus: null as boolean | null, n: 0 },     // is the PC's pointer / keyboard focus on a text box?
+  pcText: { over: false, focus: null as boolean | null, n: 0 },
+  incoming: [] as { name: string; path: string; size: number }[],     // files the PC sent this phone, not downloaded yet     // is the PC's pointer / keyboard focus on a text box?
   identify: null as number | null,
   invite: null as Invite | null,
   talking: false,
@@ -165,6 +166,8 @@ let nextTime = 0, rate = 1, lastSeq = 0, lastAudioAt = 0;
 export const meter = { level: 0 };   // read by the orb animation each frame
 const stats = { late: 0, resyncs: 0, played: 0, gaps: 0, far: 0, unsynced: 0, lateWindow: [] as number[] };
 let lastStrain = 0;
+/** When the sound last arrived with too little time to spare (file transfers wait a moment after that). */
+export const soundHealth = { tightAt: 0 };
 (window as any).__pbsLatency = () => cfg().latency_ms;     // for the tests
 (window as any).__pbsAudio = { stats, clock: () => ({ synced: clock.synced, jumps: (clock as any).jumps ?? 0, rtt: (clock as any).rtt ?? 0 }) };   // for the tests
 const slack = new Float32Array(1000); let slackN = 0;
@@ -190,6 +193,7 @@ function onProgram(p: Packet) {
   slack[slackN++ % slack.length] = (target - now) * 1000;
   // In Screen mode the buffer is short on purpose (sound just behind the picture), so only real danger counts.
   const strainAt = k.screen_mode === "owner" ? Math.max(20, k.latency_ms * 0.2) : Math.max(40, k.latency_ms * 0.45);
+  if ((target - now) * 1000 < strainAt) soundHealth.tightAt = performance.now();     // file transfers make way too
   if (screenSock && (target - now) * 1000 < strainAt) {
     const t = performance.now();
     if (t - lastStrain > 300) { lastStrain = t; send({ t: "strain" }); }     // pictures make way at once
@@ -313,6 +317,14 @@ function connect() {
         if (m.auto) toast(m.kind === "image" ? "PC copied an image" : "PC clipboard updated");
         break;
       case "calib_beep": calibBeep(m.at); break;
+      case "incoming": {     // the PC sent this phone files (dashboard): they wait in Files & media
+        const add = (Array.isArray(m.files) ? m.files : []).filter((f: any) => f && typeof f.path === "string");
+        if (add.length) {
+          phone.set({ incoming: [...phone.get().incoming.filter((x) => !add.some((a: any) => a.path === x.path)), ...add] });
+          toast(add.length === 1 ? `The PC sent you ${add[0].name}` : `The PC sent you ${add.length} files`, 5000);
+        }
+        break;
+      }
       case "kbd": { const p = phone.get().pcText; phone.set({ pcText: { over: m.over ?? p.over, focus: "focus" in m ? m.focus : p.focus, n: p.n + 1 } }); break; }
       case "moved":   // the PC changed its port: go there with the one-time pass, and stay the same phone
         location.href = `${location.protocol}//${location.hostname}:${m.port}/?handoff=${encodeURIComponent(m.handoff)}&moved=1`;

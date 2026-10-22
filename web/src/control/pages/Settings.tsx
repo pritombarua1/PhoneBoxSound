@@ -237,7 +237,21 @@ export default function Settings() {
       <div className="card">
         <div className="card-h"><h3>Files</h3><div className="spacer" /><button className="btn sm" onClick={() => send({ t: "open_share" })}><Icon name="download" />Open folder</button></div>
         <div className="url-row" style={{ cursor: "default" }}><span className="mono">{S.share_dir}</span></div>
-        <p className="note">Phones with the <b>Files</b> permission can send files and photos into this folder and download what's in it. Drop a file here to hand it to a phone.</p>
+        <p className="note">Phones with the <b>Files</b> permission can send photos, videos and any files into this folder, untouched and
+          resumable, and browse and download what is in it (folders inside it too). To push files to one phone, use <b>Send files</b> on
+          that phone in Devices: they go into "Sent to &lt;phone&gt;" and the phone is told.</p>
+        {(S.transfers || []).length > 0 && <div className="list" style={{ marginTop: 8 }}>
+          {S.transfers.map((t, i) => {
+            const dev = S.devices.find((d) => d.device_id === t.who);
+            const pct = Math.round((100 * t.done) / Math.max(1, t.size));
+            return (
+              <div key={i} className="sendfiles">
+                <span className="tnum"><b>{t.name}</b> <span className="muted">from {dev?.name || "a phone"} · {pct}%{t.speed ? ` · ${(t.speed / 1e6).toFixed(1)} MB/s · ${Math.ceil((t.size - t.done) / t.speed)} s left` : ""}</span></span>
+                <div className="progress"><i style={{ width: `${pct}%` }} /></div>
+              </div>
+            );
+          })}
+        </div>}
       </div>
 
       <div className="card">

@@ -390,3 +390,30 @@ input, textarea { user-select: text; -webkit-user-select: text; }
 .typebox { resize: none; min-height: 44px; line-height: 1.35; font-family: inherit; display: block; }
 
 .screenbox canvas.screenvideo { width: 100%; height: 100%; display: block; }
+
+/* files & media, both ways */
+.xfer .btn-row .btn { flex: 1; }
+.xfer-note { font-size: 12.5px; margin: 10px 0 0; line-height: 1.45; }
+.xfer-incoming { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; } .xfer-incoming b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.xfer-path { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; font-size: 13px; } .xfer-path .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xfer-dir { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 8px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); font: inherit; }
+.xfer-dir span { flex: 1; } .xfer-dir .icon { color: var(--muted); }
+.xfer-pickbar { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.xfer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.xfer-tile { display: flex; flex-direction: column; gap: 4px; padding: 0 0 6px; border: 2px solid transparent; border-radius: 12px; background: var(--panel2); color: var(--text); font: inherit; text-align: left; overflow: hidden; }
+.xfer-tile.on { border-color: var(--accent); }
+.xfer-pic { position: relative; display: grid; place-items: center; aspect-ratio: 1; background: var(--bg2); color: var(--muted); overflow: hidden; }
+.xfer-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.xfer-pic.sm { width: 46px; height: 46px; aspect-ratio: auto; border-radius: 8px; flex: none; }
+.xfer-check { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); }
+.xfer-check .icon { width: 15px; height: 15px; }
+.xfer-name { font-size: 12px; padding: 0 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xfer-size { font-size: 11px; padding: 0 7px; }
+.xfer-jobs { margin-top: 14px; display: grid; gap: 10px; }
+.xfer-sum { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; }
+.xfer-job { display: flex; align-items: center; gap: 10px; }
+.xfer-info { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.xfer-info b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xfer-info .muted { font-size: 12px; }
+.xfer-job.failed .xfer-info .muted { color: var(--bad); } .xfer-job.done .progress i { background: var(--good); }
+.xfer-up .icon { transform: rotate(90deg); }

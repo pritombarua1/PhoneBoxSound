@@ -1077,6 +1077,128 @@ def build_app(hub, args):
         await hub.broadcast_state()
         return web.json_response({"ok": True, "name": os.path.basename(path), "size": size})
 
+    # ---- files both ways, resumable, untouched (phoneboxsound/transfer.py)
+    from .transfer import Refused, content_type
+    from urllib.parse import quote as urlquote
+
+    def refused(e):
+        return web.json_response({"error": str(e)}, status=409)
+
+    def disposition(name, attachment=True):
+        ascii_name = name.encode("ascii", "replace").decode().replace('"', "'")
+        return f'{"attachment" if attachment else "inline"}; filename="{ascii_name}"; filename*=UTF-8\'\'{urlquote(name)}'
+
+    @routes.get("/files/browse")
+    async def files_browse(request):
+        files_client(request)
+        try:
+            return web.json_response(await asyncio.to_thread(hub.transfers.listdir, request.query.get("dir", "")))
+        except Refused as e:
+            return refused(e)
+
+    @routes.get("/files/download")
+    async def files_download(request):
+        files_client(request)
+        try:
+            p = hub.transfers.file_for_download(request.query.get("path", ""))
+        except Refused as e:
+            raise web.HTTPNotFound(text=str(e))
+        return web.FileResponse(p, headers={"Content-Disposition": disposition(os.path.basename(p), request.query.get("inline") != "1"),
+                                            "Content-Type": content_type(p), "Cache-Control": "no-store"})
+
+    @routes.get("/files/thumb")
+    async def files_thumb(request):
+        files_client(request)
+        try:
+            data = await asyncio.to_thread(hub.transfers.thumb, request.query.get("path", ""))
+        except Refused:
+            data = None
+        if not data:
+            raise web.HTTPNotFound()
+        return web.Response(body=data, content_type="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
+
+    @routes.post("/files/start")
+    async def files_start(request):
+        c = files_client(request)
+        m = await body(request)
+        try:
+            uid = hub.transfers.start(c.device_id, m.get("name"), m.get("size"), m.get("mtime"), m.get("dir") or "")
+        except Refused as e:
+            return refused(e)
+        return web.json_response({"id": uid, "offset": 0})
+
+    @routes.put("/files/chunk")
+    async def files_chunk(request):
+        c = files_client(request)
+        try:
+            done = await hub.transfers.write(request.query.get("id"), c.device_id, int(request.query.get("offset", "-1")), request.content.iter_chunked(1 << 16))
+        except Refused as e:
+            return refused(e)
+        except ValueError:
+            raise web.HTTPBadRequest()
+        return web.json_response({"offset": done})
+
+    @routes.get("/files/status")
+    async def files_status(request):
+        c = files_client(request)
+        try:
+            u = hub.transfers.get(request.query.get("id"), c.device_id)
+        except Refused as e:
+            return refused(e)
+        return web.json_response({"offset": u["done"], "size": u["size"]})
+
+    @routes.post("/files/finish")
+    async def files_finish(request):
+        c = files_client(request)
+        try:
+            got = hub.transfers.finish(request.query.get("id"), c.device_id)
+        except Refused as e:
+            return refused(e)
+        hub.event("file", f"{c.dev['name']} sent {got['name']} ({got['size'] / 1e6:.1f} MB)")
+        await hub.broadcast_state()
+        return web.json_response(got)
+
+    @routes.post("/files/cancel")
+    async def files_cancel(request):
+        c = files_client(request)
+        hub.transfers.cancel(request.query.get("id"), c.device_id)
+        return web.json_response({"ok": True})
+
+    @routes.post("/api/files/send")
+    @api
+    async def api_files_send(request):
+        """The dashboard sends one file to one phone: it is saved in "Sent to <phone>" and the phone is told."""
+        dev_id = request.query.get("device", "")
+        dev = hub.cfg["devices"].get(dev_id)
+        if not dev:
+            return web.json_response({"error": "unknown phone"}, status=404)
+        path = hub.transfers.save_for(dev["name"], request.query.get("name", "file"))
+        size = 0
+        try:
+            with open(path + ".part", "wb") as f:
+                async for chunk in request.content.iter_chunked(1 << 16):
+                    size += len(chunk)
+                    f.write(chunk)
+            os.replace(path + ".part", path)
+        except Exception:
+            try:
+                os.remove(path + ".part")
+            except OSError:
+                pass
+            raise
+        mtime = request.query.get("mtime")
+        if mtime:
+            try:
+                os.utime(path, (float(mtime) / 1000, float(mtime) / 1000))
+            except (OSError, ValueError):
+                pass
+        rel = hub.transfers.rel(path)
+        c = hub.online(dev_id)
+        if c and c.perms.get("files"):
+            c.send_json({"t": "incoming", "files": [{"name": os.path.basename(path), "path": rel, "size": size}]})
+        hub.event("file", f"Sent {os.path.basename(path)} to {dev['name']} ({size / 1e6:.1f} MB)")
+        return web.json_response({"ok": True, "path": rel, "size": size, "delivered": bool(c and c.perms.get("files"))})
+
     @routes.get("/clip/{token}/{name}")
     async def clip_image(request):
         c = next((x for x in hub.clients.values() if secrets.compare_digest(x.file_token, request.match_info["token"])), None)

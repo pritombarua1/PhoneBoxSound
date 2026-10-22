@@ -306,3 +306,5 @@ table.matrix td { vertical-align: middle; } table.matrix th { white-space: nowra
 .idrow .btn { color: var(--text); }
 
 .terms { max-width: 600px; } .terms ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; } .terms .card-h .icon { color: var(--accent); }
+
+.sendfiles { flex-basis: 100%; display: grid; gap: 4px; font-size: 12.5px; margin-top: 4px; }

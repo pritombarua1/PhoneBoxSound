@@ -1255,3 +1255,47 @@ def test_screen_mode_pauses_the_others_and_needs_permission(tmp_path):
     assert hub.screen_mode_of(a) == "owner" and hub.screen_mode_of(b) == "held"
     hub.set_screen_mode(a, False)
     assert hub.screen_owner is None and hub.screen_mode_of(b) is None
+
+
+def test_transfers_stay_inside_the_shared_folder(tmp_path):
+    from phoneboxsound.transfer import Refused, Transfers
+    share = tmp_path / "share"
+    share.mkdir()
+    (tmp_path / "secret.txt").write_text("not for phones")
+    (share / "sub").mkdir()
+    (share / "sub" / "a.jpg").write_bytes(b"x")
+    t = Transfers(lambda: str(share))
+    for bad in ("../secret.txt", "sub/../../secret.txt", "..\secret.txt", "/../secret.txt", ".incoming/x", str(tmp_path / "secret.txt")):
+        with pytest.raises(Refused):
+            t.file_for_download(bad)
+    assert t.listdir("sub")["files"][0]["path"] == "sub/a.jpg"
+    with pytest.raises(Refused):
+        t.listdir("..")
+
+
+def test_a_resumable_upload_lands_untouched_with_its_date(tmp_path):
+    from phoneboxsound.transfer import Refused, Transfers
+    share = tmp_path / "share"
+    share.mkdir()
+    t = Transfers(lambda: str(share))
+    data = os.urandom(3 * 1024 * 1024 + 123)
+
+    async def pieces(b, size=70_000):
+        for i in range(0, len(b), size):
+            yield b[i:i + size]
+
+    async def run():
+        uid = t.start("phone", "../../evil/holiday.mp4", len(data), mtime=1_700_000_000_000)
+        assert await t.write(uid, "phone", 0, pieces(data[:1_500_000])) == 1_500_000    # one piece, complete
+        assert await t.write(uid, "phone", 12345, pieces(b"zz")) == 1_500_000           # a wrong offset is told where to resume
+        assert await t.write(uid, "phone", 1_500_000, pieces(data[1_500_000:])) == len(data)
+        with pytest.raises(Refused):
+            t.get(uid, "another phone")                                                   # one phone cannot touch another's upload
+        return t.finish(uid, "phone")
+
+    got = asyncio.run(run())
+    out = share / got["name"]
+    assert got["name"] == "holiday.mp4" and out.read_bytes() == data                      # the name cannot climb out of the folder
+    assert abs(out.stat().st_mtime - 1_700_000_000) < 2
+    with pytest.raises(Refused):
+        t.start("phone", "x.bin", 10 ** 15)                                               # bigger than any disk: refused before anything is written

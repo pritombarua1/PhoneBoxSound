@@ -45,6 +45,38 @@ function NameInput({ value, onCommit, cls = "nm", placeholder, allowEmpty }: { v
     onBlur={() => { setEditing(false); if ((v.trim() || allowEmpty) && v !== value) onCommit(v.trim()); }} onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()} />;
 }
 
+/** Send files from this PC to one phone: they go into "Sent to <phone>" and the phone is told. */
+function SendFiles({ id, name, allowed, online }: { id: string; name: string; allowed: boolean; online: boolean }) {
+  const pick = useRef<HTMLInputElement>(null);
+  const [jobs, setJobs] = useState<{ name: string; size: number; done: number; state: string }[]>([]);
+  const send1 = (f: File, i: number) => new Promise<void>((ok) => {
+    const x = new XMLHttpRequest();
+    x.open("POST", `/api/files/send?device=${encodeURIComponent(id)}&name=${encodeURIComponent(f.name)}&mtime=${f.lastModified}`);
+    const set = (change: object) => setJobs((all) => all.map((j, k) => (k === i ? { ...j, ...change } : j)));
+    x.upload.onprogress = (e) => set({ done: e.loaded });
+    x.onload = () => { set({ done: f.size, state: x.status === 200 ? "sent" : "failed" }); ok(); };
+    x.onerror = () => { set({ state: "failed" }); ok(); };
+    x.send(f);
+  });
+  const go = async (list: FileList) => {
+    const files = Array.from(list);
+    setJobs(files.map((f) => ({ name: f.name, size: f.size, done: 0, state: "sending" })));
+    for (let i = 0; i < files.length; i++) await send1(files[i], i);
+  };
+  if (!allowed) return null;
+  const total = jobs.reduce((n, j) => n + j.size, 0), done = jobs.reduce((n, j) => n + j.done, 0);
+  return (
+    <>
+      <button className="btn sm" title={online ? `Send files from this PC to ${name}` : `${name} is offline: files wait in "Sent to ${name}"`} onClick={() => pick.current?.click()}><Icon name="download" />Send files</button>
+      <input ref={pick} type="file" multiple hidden onChange={(e) => { if (e.target.files?.length) go(e.target.files); e.target.value = ""; }} />
+      {jobs.length > 0 && <div className="sendfiles">
+        <span className="muted tnum">{jobs.filter((j) => j.state === "sent").length} of {jobs.length} sent · {Math.round((100 * done) / Math.max(1, total))}%</span>
+        <div className="progress"><i style={{ width: `${(100 * done) / Math.max(1, total)}%` }} /></div>
+      </div>}
+    </>
+  );
+}
+
 const DeviceCard = memo(function DeviceCard({ d, zones, tick }: { d: DeviceRow; zones: string[]; tick: number }) {
   const id = d.device_id, s = d.settings, st = d.stats || {};
   const kv: [string, string | number][] = [
@@ -114,6 +146,7 @@ const DeviceCard = memo(function DeviceCard({ d, zones, tick }: { d: DeviceRow; 
       <div className="row" style={{ marginTop: 12, flexWrap: "wrap" }}>
         <button className="btn sm" onClick={() => send({ t: "identify", device_id: id })}><Icon name="bell" />Identify</button>
         <button className="btn sm" onClick={() => setDevice(id, { muted: !s.muted })}>{s.muted ? "Unmute" : "Mute"}</button>
+        <SendFiles id={id} name={d.name} allowed={!!d.perms.files} online={d.online} />
         <div className="spacer" />
         <button className="btn sm" onClick={() => send({ t: "kick", device_id: id })}>Disconnect</button>
         <button className="btn sm danger" title="Disconnect it and refuse it from now on, even with the room code"

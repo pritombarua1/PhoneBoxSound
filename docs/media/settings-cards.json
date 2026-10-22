@@ -17,12 +17,12 @@
  {
   "file": "set-3",
   "title": "Files",
-  "text": "Files Open folder Downloads\\PhoneBoxSound Phones with the Files permission can send files and photos into this folder and download what's in it. Drop a file here to hand it to a phone."
+  "text": "Files Open folder Downloads\\PhoneBoxSound Phones with the Files permission can send photos, videos and any files into this folder, untouched and resumable, and browse and download what is in it (folders inside it too). To push files to one phone, use Send files on that phone in Devices: they go into \"Sent to <phone>\" and the phone is told."
  },
  {
   "file": "set-4",
   "title": "Pairing & network",
-  "text": "Pairing & network New code Room code 3739 Wi-Fi / LAN http://192.168.0.2:8095 Wi-Fi / LAN http://10.242.0.214:8095 Wi-Fi / LAN http://192.168.56.1:8095 Wi-Fi / LAN http://172.25.64.1:8095 Secure https://192.168.0.2:8496 Port phones and this page follow by themselves Move Advertise as phoneboxsound.local Secure server for intercom & app install (restart needed) Warning-free https address via local-ip.sh (restart needed) Approve new phones : the code alone isn't enough Lockdown : no phone controls the PC, no new phones, no remote API Strict security : PC controls only for verified phones Disconnect all phones The same port answers http and https. On the secure address every phone creates its own key that never leaves it and signs in with that key, so a copied token or a faked address can't pose as it. With strict security on, touchpad, clipboard, screen view, files, commands, power and managing speakers only work for those verified phones. A wrong code locks an address out for a minute after 5 tries. The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access."
+  "text": "Pairing & network New code Room code 4287 Wi-Fi / LAN http://192.168.0.2:8095 Wi-Fi / LAN http://10.242.0.214:8095 Wi-Fi / LAN http://192.168.56.1:8095 Wi-Fi / LAN http://172.22.112.1:8095 Secure https://192.168.0.2:8496 Port phones and this page follow by themselves Move Advertise as phoneboxsound.local Secure server for intercom & app install (restart needed) Warning-free https address via local-ip.sh (restart needed) Approve new phones : the code alone isn't enough Lockdown : no phone controls the PC, no new phones, no remote API Strict security : PC controls only for verified phones Disconnect all phones The same port answers http and https. On the secure address every phone creates its own key that never leaves it and signs in with that key, so a copied token or a faked address can't pose as it. With strict security on, touchpad, clipboard, screen view, files, commands, power and managing speakers only work for those verified phones. A wrong code locks an address out for a minute after 5 tries. The warning-free address uses a public certificate whose key is public too: it removes the browser warning and unlocks secure-page features, but it is not strong protection against someone on your Wi-Fi. It needs internet access."
  },
  {
   "file": "set-5",
@@ -52,7 +52,7 @@
  {
   "file": "set-10",
   "title": "API & automation",
-  "text": "API & automation New token p246••••••••••NK- Status What's playing List phones Play / pause Skip forward 30 s Next track Repeat one song PC volume 40% Pause all phones Phones master volume 70% Apply scene: Movie Press Ctrl+S Type text Read clipboard Set clipboard Sleep the PC Cancel sleep / shutdown Copy command curl -H \"Authorization: Bearer <token>\" \\ http://192.168.0.2:8095/api/status Webhooks (one URL per line) Save Events: device_connected, device_disconnected, media_changed, intercom_started, intercom_stopped, scene_applied, streaming."
+  "text": "API & automation New token DU_D••••••••••LRd Status What's playing List phones Play / pause Skip forward 30 s Next track Repeat one song PC volume 40% Pause all phones Phones master volume 70% Apply scene: Movie Press Ctrl+S Type text Read clipboard Set clipboard Sleep the PC Cancel sleep / shutdown Copy command curl -H \"Authorization: Bearer <token>\" \\ http://192.168.0.2:8095/api/status Webhooks (one URL per line) Save Events: device_connected, device_disconnected, media_changed, intercom_started, intercom_stopped, scene_applied, streaming."
  },
  {
   "file": "set-11",
