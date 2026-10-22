@@ -599,6 +599,9 @@ Versions up to 3.2.0 were published under the GNU GPL v3; copies of those stay u
 **Releases** are built, tested and published automatically from this source code by GitHub Actions.
 Privacy: [PRIVACY.md](PRIVACY.md) (nothing is collected).
 
+**Support it:** PhoneBoxSound is free for non-commercial use. If it is useful to you, you can support its
+development at [paypal.me/pritombaruaa](https://paypal.me/pritombaruaa).
+
 **Citing it:** use the *Cite this repository* button on the right of the GitHub page
 ([CITATION.cff](CITATION.cff)).
 
