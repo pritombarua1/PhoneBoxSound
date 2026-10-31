@@ -22,6 +22,8 @@ No cloud · no account · no app install · local network only · free for non-c
 through, and **[how it works and how it measures up](https://pritombarua1.github.io/PhoneBoxSound/results.html)**: diagrams, the results of the
 automatic tests on the current version, and how to run the same checks yourself.
 
+**Firefox extension:** [PhoneBoxSound on Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/phoneboxsound/).
+
 ## Videos
 
 | Guided tour: every screen and setting | Adding the browser extension by hand |
